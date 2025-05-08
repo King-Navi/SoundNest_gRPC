@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package user_image;
+
+message UploadImageRequest {
+  int32 user_id = 1;
+  bytes image_data = 2;
+  string extension = 3;
+}
+
+message UploadImageResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message DownloadImageRequest {
+  int32 user_id = 1;
+}
+
+message DownloadImageResponse {
+  bytes image_data = 1;
+  string extension = 2;
+}
+
+service UserImageService {
+  rpc UploadImage (UploadImageRequest) returns (UploadImageResponse);
+  rpc DownloadImage (DownloadImageRequest) returns (DownloadImageResponse);
+}

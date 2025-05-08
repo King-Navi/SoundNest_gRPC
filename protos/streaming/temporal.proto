@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+//EJEMPLO ES TEMPORAL SOLO QUIERO PROBAR
+package event;
+
+// Request to subscribe for server-side events
+message SubscribeRequest {
+  // Unique identifier for the client session
+  string session_id = 1;
+  // Optional filter to receive only specific event types
+  repeated string event_types = 2;
+}
+
+// Generic event notification sent from server to client
+message EventNotification {
+  // Type of the event, e.g., "USER_JOINED", "NEW_MESSAGE"
+  string event_type = 1;
+  // Timestamp of the event in ISO8601 format
+  string timestamp = 2;
+  // Arbitrary JSON payload containing event details
+  string payload_json = 3;
+}
+
+// Service that allows clients to subscribe and receive real-time events
+service EventService {
+  // Server-streaming RPC: keeps the session open and pushes EventNotification
+  // to the client whenever a matching event occurs on the server
+  rpc Subscribe(SubscribeRequest) returns (stream EventNotification);
+}

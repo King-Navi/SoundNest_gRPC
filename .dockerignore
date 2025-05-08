@@ -1,0 +1,57 @@
+# local virtualenv 
+.venv
+
+# cache
+.mypy_cache
+
+# Python compile files
+__pycache__/
+*.pyc
+*.pyo
+
+#test
+tests
+tests/
+# IDE
+*.log
+*.swp
+*.swo
+*.DS_Store
+.vscode
+.idea
+.mypy_cache/
+# envs
+.env
+env/
+venv/
+
+# git
+.git
+.gitignore
+
+# output build
+build/
+dist/
+*.egg-info/
+
+#Certs
+.certs/
+certs/
+
+#commands for pw
+pw_commands
+pw_commands/
+compile_env
+commands.txt
+node_modules/
+package-lock.json
+package.json
+protos
+protos/
+.vscode/
+
+client/
+mypy.ini
+README.md
+
+uploads/

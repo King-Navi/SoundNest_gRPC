@@ -1,0 +1,61 @@
+# Compiled Python files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Poetry virtual environments (si están dentro del proyecto)
+.venv/
+
+# Poetry-specific
+poetry.lock
+poetry.toml  # Solo si no quieres compartir config local (opcional)
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Pytest & coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# mypy, pylint, etc
+.mypy_cache/
+.dmypy.json
+.pyre/
+
+# Editors & OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Docs (si usas MkDocs o Sphinx)
+/docs/site/
+*.log
+
+# Jupyter Notebooks checkpoint files
+.ipynb_checkpoints/
+
+# Python env version file
+.python-version
+
+certs/
+.certs/
+.env
+
+#Node.js only for nodemon
+node_modules/
+package-lock.json
+package.json
+commands.txt
+compile_env
+.mypy_cache/
+client/
+uploads/

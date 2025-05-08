@@ -1,0 +1,107 @@
+syntax = "proto3";
+
+package song;
+option python_package = "generated.streaming";
+// Simple upload: upload full song in one message
+message Song {
+  // Name of the song
+  string song_name = 1;
+  // Binary file content
+  bytes file = 2;
+  // Genre ID of the song
+  int32 id_song_genre = 3;
+  // Brief description of the song
+  string description = 4;
+}
+
+// Streaming upload: metadata for streaming upload
+message UploadSongMetadata {
+  // Name of the song
+  string song_name = 1;
+  // Genre ID of the song
+  int32 id_song_genre = 2;
+  // Brief description of the song
+  string description = 3;
+}
+
+// Chunk of the song file for streaming upload
+message UploadSongChunk {
+  // A chunk of the song file
+  bytes chunk_data = 1;
+}
+
+// Request message for uploading songs via streaming
+message UploadSongRequest {
+  // Oneof payload: either metadata or file chunk
+  oneof payload {
+    // Metadata for streaming upload
+    UploadSongMetadata metadata = 1;
+    // File chunk for streaming upload
+    UploadSongChunk chunk = 2;
+  }
+}
+
+// Response message for upload operations
+message UploadSongResponse {
+  // True if operation succeeded
+  bool result = 1;
+  // Message describing success or error
+  string message = 2;
+}
+
+// Request message for downloading songs
+message DownloadSongRequest {
+  // ID of the song to download
+  string id_song = 1;
+}
+
+// Metadata for streaming download
+message DownloadSongMetadata {
+  // Name of the song
+  string song_name = 1;
+  // Genre ID of the song
+  int32 id_song_genre = 2;
+  // Brief description of the song
+  string description = 3;
+}
+
+// Chunk of the song file for streaming download
+message DownloadSongChunk {
+  // A chunk of the song file
+  bytes chunk_data = 1;
+}
+
+// Response message for streaming download operations
+message DownloadSongResponse {
+  // Oneof payload: either metadata or file chunk
+  oneof payload {
+    // Metadata for streaming download
+    DownloadSongMetadata metadata = 1;
+    // File chunk for streaming download
+    DownloadSongChunk chunk = 2;
+  }
+}
+
+// Simple download: send full song in one message
+message DownloadSongData {
+  // Name of the song
+  string song_name = 1;
+  // Binary file content
+  bytes file = 2;
+  // Genre ID of the song
+  int32 id_song_genre = 3;
+  // Brief description of the song
+  string description = 4;
+}
+
+// Service definition for song operations
+service SongService {
+  // Upload full song in a single RPC
+  rpc UploadSong (Song) returns (UploadSongResponse);
+  // Upload song via client-side streaming
+  rpc UploadSongStream (stream UploadSongRequest) returns (UploadSongResponse);
+  // Download song via server-side streaming
+  rpc DownloadSongStream (DownloadSongRequest) returns (stream DownloadSongResponse);
+  // Download full song in a single RPC
+  rpc DownloadSong (DownloadSongRequest) returns (DownloadSongData);
+}

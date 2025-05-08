@@ -1,0 +1,6 @@
+{
+    "env": { "PYTHONPATH": "src/generated" },
+    "watch": ["src"],
+    "ext": "py",
+    "exec": "poetry run python src/server.py"
+}
