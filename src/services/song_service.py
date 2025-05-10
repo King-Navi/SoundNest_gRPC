@@ -1,70 +1,111 @@
-import os
-import tempfile
-import grpc
-from typing import Iterator, Optional
-from concurrent import futures
+import uuid
+import datetime
+from typing import Iterator
+from dependency_injector.wiring import inject
+from generated.streaming.song_pb2 import  UploadSongMetadata #pylint: disable=E0611
+from models.mysql.models import Song
+from repository.song_repository import SongRepository
+from utils.disk_access.utilities import generate_unique_resource_id_song, is_valid_extension_song
+from utils.disk_access.song_file import SognFileManager
+from utils.wrappers.song_wrapper import SongWithFile
+from .errors.exceptions import MissingArguments, SongSavingError
 
-from streaming import song_pb2, song_pb2_grpc
-
-class SongService(song_pb2_grpc.SongServiceServicer):
+VALID_EXTENSIONS = {"mp3", "wav"}
+class SongService:
     """business-logic layer for all SongService RPCs."""
+    @inject
+    def __init__(self,
+                song_manager: SognFileManager,
+                song_repository : SongRepository
+                ):
+        self.song_manager :SognFileManager = song_manager
+        self.song_repository :SongRepository = song_repository
+    def handle_upload(
+            self,user_id: int ,
+            song_name : str,
+            file_bytes : bytearray,
+            extension : str,
+            descripcion_song: str,
+            id_song_genre: int )-> bool:
+        is_valid_extension(extension)
+        resource_id : str = generate_unique_resource_id_song(self.song_repository)
+        self.song_manager.save_song(file_bytes=file_bytes, extension=extension, file_name=resource_id)
 
-    def UploadSong(self, request: song_pb2.Song, context: grpc.ServicerContext) -> song_pb2.UploadSongResponse: #pylint: disable=E1101:no-member
-        print("Hallelujah How'd you do it? (How'd you do it?)You been on my mind")
-        #validate: `request.song_name`, `request.file`, `request.id_song_genre`, `request.description` with pydantic
-        #save the file :(e.g. to disk or cloud storage)
-        #persist metadata: in your database
-        return song_pb2.UploadSongResponse(result=True, message="Uploaded successfully") #pylint: disable=E1101:no-member
+        new_song = Song(
+            songName=song_name,
+            fileName=resource_id,
+            durationSeconds=round(self.song_manager.get_audio_duration(resource_id, extension)),
+            releaseDate=datetime.datetime.now(),
+            idSongGenre=id_song_genre,
+            idAppUser=user_id
+        )
+        self.song_repository.insert_song( new_song )
+        if not self.song_manager.file_exists(resource_id,extension):
+            self.song_repository.delete_song_by_filename(resource_id)
+            raise SongSavingError("Failed to save image to disk.")
+        #TODO: Put in mongo the Metada descripcion
+        return True
 
-    def UploadSongStream(
-        self,
-        request_iterator: Iterator[song_pb2.UploadSongRequest], # pylint: disable=E1101
-        context: grpc.ServicerContext
-    ) -> song_pb2.UploadSongResponse:  # pylint: disable=E1101
-        metadata: Optional[song_pb2.UploadSongMetadata] = None # pylint: disable=E1101
-        total_bytes: int = 0
-        try:
-            with tempfile.NamedTemporaryFile(suffix=".mp3", mode='w+b', delete=False) as temp_file_path:
-                for request in request_iterator:
-                    if request.HasField('metadata'):
-                        metadata = request.metadata
-                        print(f"[SERVER] Recibido metadata: {metadata.song_name}, género: {metadata.id_song_genre}")
-                    elif request.HasField('chunk'):
-                        chunk_data: bytes = request.chunk.chunk_data
-                        temp_file_path.write(chunk_data)
-                        total_bytes += len(chunk_data)
-                        print(f"[SERVER] Recibido chunk de {len(chunk_data)} bytes")
+    def handle_upload_stream(self, request_iterator, user_id)-> bool:
+        metadata : UploadSongMetadata = None
+        total_bytes = 0
+        chunks = []
+        for request in request_iterator:
+            if request.HasField('metadata'):
+                metadata = request.metadata
+            elif request.HasField('chunk'):
+                chunks.append(request.chunk.chunk_data)
+                total_bytes += len(request.chunk.chunk_data)
+        check_arguments_upload_streaming(metadata, total_bytes)
+        file_bytes = b''.join(chunks)
+        is_valid_extension_song(metadata.extension)
 
-            print(f"[SERVER] Canción completa recibida: {total_bytes} bytes en {temp_file_path}")
-            # TODO: mover el archivo a destino final, guardar en DB, etc.
-            #Puedes usar delete=True
-            os.remove(temp_file_path.name)
+        resource_id : str = generate_unique_resource_id_song(self.song_repository)
+        self.song_manager.save_song(file_bytes=file_bytes, extension=metadata.extension, file_name=resource_id)
+        new_song = Song(
+            songName=metadata.song_name,
+            fileName=resource_id,
+            durationSeconds=round(self.song_manager.get_audio_duration(resource_id, metadata.extension)),
+            releaseDate=datetime.datetime.now(),
+            idSongGenre=metadata.id_song_genre,
+            idSongExtension= metadata.extension,
+            idAppUser=user_id
+        )
+        self.song_repository.insert_song( new_song )
 
-            return song_pb2.UploadSongResponse(result=True, message="Stream uploaded successfully")  # pylint: disable=E1101
+        if not self.song_manager.file_exists(resource_id, metadata.extension):
+            self.song_repository.delete_song_by_filename(resource_id)
+            raise SongSavingError("Failed to save image to disk.")
+        #TODO: Put in mongo the Metada descripcion
+        return True
 
-        except Exception as e:
-            print(f"[SERVER] Error procesando el stream: {e}")
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details('Error al procesar la canción')
-            return song_pb2.UploadSongResponse(result=False, message="Error en el servidor")  # pylint: disable=E1101
+    def handle_download(self, song_id : int) -> Song:
+        #TODO: CADA VEZ SE TIENE QUE AUMENTAR LA VISAULIZACION SI NO ES AQUI ES EN RESTFUL
+        song: Song = self.song_repository.get_song_by_id(song_id)
+        file_bytes: bytes = self.song_manager.load_song_file(song.fileName, song.extension)
+        songWrapper = SongWithFile(song=song, file_content=file_bytes)
+        return songWrapper
+    
+    def handle_download_stream(self, song_id: int) -> tuple[Song, Iterator[bytes]]:
+        #TODO: CADA VEZ SE TIENE QUE AUMENTAR LA VISAULIZACION SI NO ES AQUI ES EN RESTFUL
 
-    def DownloadSongStream(self, request: song_pb2.DownloadSongRequest, context: grpc.ServicerContext): #pylint: disable=E1101:no-member
-        # TODO: look up song by request.id_song
-        # TODO: yield a DownloadSongResponse(metadata=…) once at start
-        # TODO: open file and for each chunk read and yield DownloadSongResponse(chunk=...)
-        #     with file_handle as f:
-        #         while chunk := f.read(64*1024):
-        #             yield song_pb2.DownloadSongResponse(chunk=song_pb2.DownloadSongChunk(chunk_data=chunk))
-        pass  # remove once implemented
+        song: Song = self.song_repository.get_song_by_id(song_id)
+        chunk_generator = self.song_manager.read_resource_stream((song.fileName, song.extension))
+        return song, chunk_generator
 
-    def DownloadSong(self, request: song_pb2.DownloadSongRequest, context: grpc.ServicerContext) -> song_pb2.DownloadSongData: #pylint: disable=E1101:no-member
-        # TODO: look up song by request.id_song
-        # TODO: read entire file into memory (only for small/medium files!)
-        # data = open(...).read()
-        # return song_pb2.DownloadSongData(
-        #     song_name=…,
-        #     file=data,
-        #     id_song_genre=…,
-        #     description=…
-        # )
-        pass  # remove once implemented
+    def _generate_unique_resource_id(self) -> str:
+        while True:
+            resource_id = str(uuid.uuid4())
+            if not self.song_repository.existe_filename(resource_id):
+                return resource_id
+
+def check_arguments_upload_streaming(metadata , total_bytes):
+    if metadata is None:
+        raise MissingArguments("metadata")
+    if total_bytes <= 0:
+        raise MissingArguments("chunk")
+    is_valid_extension(metadata.extension)
+
+def is_valid_extension(extension :str):
+    if not extension or extension.lower() not in VALID_EXTENSIONS:
+        raise ValueError(f"Invalid or missing file extension. Supported extensions: {VALID_EXTENSIONS}")

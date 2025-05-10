@@ -9,7 +9,6 @@ load_dotenv()
 
 user_image_path = os.getenv("USER_IMAGE_PATH")
 
-
 class UserImageManager(BaseResourceManager):
 
     @override
@@ -21,7 +20,7 @@ class UserImageManager(BaseResourceManager):
     def save_user_image(self, resource_id, image_bytes, extension="png"):
         self.write_resource((resource_id, extension), image_bytes)
 
-    def load_user_image(self, resource_id, extension="png"):
+    def load_user_image(self, resource_id, extension="png")-> bytes:
         return self.read_resource((resource_id, extension))
     
     def file_exists(self, resource_id: str, extension: str) -> bool:

@@ -26,8 +26,7 @@ if _version_not_supported:
 
 
 class SongServiceStub(object):
-    """Service definition for song operations
-    """
+    """Missing associated documentation comment in .proto file."""
 
     def __init__(self, channel):
         """Constructor.
@@ -58,33 +57,28 @@ class SongServiceStub(object):
 
 
 class SongServiceServicer(object):
-    """Service definition for song operations
-    """
+    """Missing associated documentation comment in .proto file."""
 
     def UploadSong(self, request, context):
-        """Upload full song in a single RPC
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def UploadSongStream(self, request_iterator, context):
-        """Upload song via client-side streaming
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def DownloadSongStream(self, request, context):
-        """Download song via server-side streaming
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def DownloadSong(self, request, context):
-        """Download full song in a single RPC
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -121,8 +115,7 @@ def add_SongServiceServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class SongService(object):
-    """Service definition for song operations
-    """
+    """Missing associated documentation comment in .proto file."""
 
     @staticmethod
     def UploadSong(request,

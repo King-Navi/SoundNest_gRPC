@@ -16,7 +16,7 @@ COPY . /app
 
 EXPOSE 50051
 
-CMD ["python", "src/server.py"]
+CMD ["poetry", "run", "python", "-u", "src/server.py"]
 
 # Si agregas compilaciones C (como numpy, pandas), instala:
 # RUN apt-get update && apt-get install -y build-essential

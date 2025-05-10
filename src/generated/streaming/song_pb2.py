@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x14streaming/song.proto\x12\x04song\"S\n\x04Song\x12\x11\n\tsong_name\x18\x01 \x01(\t\x12\x0c\n\x04\x66ile\x18\x02 \x01(\x0c\x12\x15\n\rid_song_genre\x18\x03 \x01(\x05\x12\x13\n\x0b\x64\x65scription\x18\x04 \x01(\t\"S\n\x12UploadSongMetadata\x12\x11\n\tsong_name\x18\x01 \x01(\t\x12\x15\n\rid_song_genre\x18\x02 \x01(\x05\x12\x13\n\x0b\x64\x65scription\x18\x03 \x01(\t\"%\n\x0fUploadSongChunk\x12\x12\n\nchunk_data\x18\x01 \x01(\x0c\"t\n\x11UploadSongRequest\x12,\n\x08metadata\x18\x01 \x01(\x0b\x32\x18.song.UploadSongMetadataH\x00\x12&\n\x05\x63hunk\x18\x02 \x01(\x0b\x32\x15.song.UploadSongChunkH\x00\x42\t\n\x07payload\"5\n\x12UploadSongResponse\x12\x0e\n\x06result\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\"&\n\x13\x44ownloadSongRequest\x12\x0f\n\x07id_song\x18\x01 \x01(\t\"U\n\x14\x44ownloadSongMetadata\x12\x11\n\tsong_name\x18\x01 \x01(\t\x12\x15\n\rid_song_genre\x18\x02 \x01(\x05\x12\x13\n\x0b\x64\x65scription\x18\x03 \x01(\t\"\'\n\x11\x44ownloadSongChunk\x12\x12\n\nchunk_data\x18\x01 \x01(\x0c\"{\n\x14\x44ownloadSongResponse\x12.\n\x08metadata\x18\x01 \x01(\x0b\x32\x1a.song.DownloadSongMetadataH\x00\x12(\n\x05\x63hunk\x18\x02 \x01(\x0b\x32\x17.song.DownloadSongChunkH\x00\x42\t\n\x07payload\"_\n\x10\x44ownloadSongData\x12\x11\n\tsong_name\x18\x01 \x01(\t\x12\x0c\n\x04\x66ile\x18\x02 \x01(\x0c\x12\x15\n\rid_song_genre\x18\x03 \x01(\x05\x12\x13\n\x0b\x64\x65scription\x18\x04 \x01(\t2\x9c\x02\n\x0bSongService\x12\x32\n\nUploadSong\x12\n.song.Song\x1a\x18.song.UploadSongResponse\x12G\n\x10UploadSongStream\x12\x17.song.UploadSongRequest\x1a\x18.song.UploadSongResponse(\x01\x12M\n\x12\x44ownloadSongStream\x12\x19.song.DownloadSongRequest\x1a\x1a.song.DownloadSongResponse0\x01\x12\x41\n\x0c\x44ownloadSong\x12\x19.song.DownloadSongRequest\x1a\x16.song.DownloadSongDatab\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x14streaming/song.proto\x12\x04song\"f\n\x04Song\x12\x11\n\tsong_name\x18\x01 \x01(\t\x12\x0c\n\x04\x66ile\x18\x02 \x01(\x0c\x12\x15\n\rid_song_genre\x18\x03 \x01(\x05\x12\x13\n\x0b\x64\x65scription\x18\x04 \x01(\t\x12\x11\n\textension\x18\x05 \x01(\t\"f\n\x12UploadSongMetadata\x12\x11\n\tsong_name\x18\x01 \x01(\t\x12\x15\n\rid_song_genre\x18\x02 \x01(\x05\x12\x13\n\x0b\x64\x65scription\x18\x03 \x01(\t\x12\x11\n\textension\x18\x04 \x01(\t\"%\n\x0fUploadSongChunk\x12\x12\n\nchunk_data\x18\x01 \x01(\x0c\"t\n\x11UploadSongRequest\x12,\n\x08metadata\x18\x01 \x01(\x0b\x32\x18.song.UploadSongMetadataH\x00\x12&\n\x05\x63hunk\x18\x02 \x01(\x0b\x32\x15.song.UploadSongChunkH\x00\x42\t\n\x07payload\"5\n\x12UploadSongResponse\x12\x0e\n\x06result\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\"&\n\x13\x44ownloadSongRequest\x12\x0f\n\x07id_song\x18\x01 \x01(\t\"h\n\x14\x44ownloadSongMetadata\x12\x11\n\tsong_name\x18\x01 \x01(\t\x12\x15\n\rid_song_genre\x18\x02 \x01(\x05\x12\x13\n\x0b\x64\x65scription\x18\x03 \x01(\t\x12\x11\n\textension\x18\x04 \x01(\t\"\'\n\x11\x44ownloadSongChunk\x12\x12\n\nchunk_data\x18\x01 \x01(\x0c\"{\n\x14\x44ownloadSongResponse\x12.\n\x08metadata\x18\x01 \x01(\x0b\x32\x1a.song.DownloadSongMetadataH\x00\x12(\n\x05\x63hunk\x18\x02 \x01(\x0b\x32\x17.song.DownloadSongChunkH\x00\x42\t\n\x07payload\"r\n\x10\x44ownloadSongData\x12\x11\n\tsong_name\x18\x01 \x01(\t\x12\x0c\n\x04\x66ile\x18\x02 \x01(\x0c\x12\x15\n\rid_song_genre\x18\x03 \x01(\x05\x12\x13\n\x0b\x64\x65scription\x18\x04 \x01(\t\x12\x11\n\textension\x18\x05 \x01(\t2\x9c\x02\n\x0bSongService\x12\x32\n\nUploadSong\x12\n.song.Song\x1a\x18.song.UploadSongResponse\x12G\n\x10UploadSongStream\x12\x17.song.UploadSongRequest\x1a\x18.song.UploadSongResponse(\x01\x12M\n\x12\x44ownloadSongStream\x12\x19.song.DownloadSongRequest\x1a\x1a.song.DownloadSongResponse0\x01\x12\x41\n\x0c\x44ownloadSong\x12\x19.song.DownloadSongRequest\x1a\x16.song.DownloadSongDatab\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,25 +32,25 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'streaming.song_pb2', _globa
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_SONG']._serialized_start=30
-  _globals['_SONG']._serialized_end=113
-  _globals['_UPLOADSONGMETADATA']._serialized_start=115
-  _globals['_UPLOADSONGMETADATA']._serialized_end=198
-  _globals['_UPLOADSONGCHUNK']._serialized_start=200
-  _globals['_UPLOADSONGCHUNK']._serialized_end=237
-  _globals['_UPLOADSONGREQUEST']._serialized_start=239
-  _globals['_UPLOADSONGREQUEST']._serialized_end=355
-  _globals['_UPLOADSONGRESPONSE']._serialized_start=357
-  _globals['_UPLOADSONGRESPONSE']._serialized_end=410
-  _globals['_DOWNLOADSONGREQUEST']._serialized_start=412
-  _globals['_DOWNLOADSONGREQUEST']._serialized_end=450
-  _globals['_DOWNLOADSONGMETADATA']._serialized_start=452
-  _globals['_DOWNLOADSONGMETADATA']._serialized_end=537
-  _globals['_DOWNLOADSONGCHUNK']._serialized_start=539
-  _globals['_DOWNLOADSONGCHUNK']._serialized_end=578
-  _globals['_DOWNLOADSONGRESPONSE']._serialized_start=580
-  _globals['_DOWNLOADSONGRESPONSE']._serialized_end=703
-  _globals['_DOWNLOADSONGDATA']._serialized_start=705
-  _globals['_DOWNLOADSONGDATA']._serialized_end=800
-  _globals['_SONGSERVICE']._serialized_start=803
-  _globals['_SONGSERVICE']._serialized_end=1087
+  _globals['_SONG']._serialized_end=132
+  _globals['_UPLOADSONGMETADATA']._serialized_start=134
+  _globals['_UPLOADSONGMETADATA']._serialized_end=236
+  _globals['_UPLOADSONGCHUNK']._serialized_start=238
+  _globals['_UPLOADSONGCHUNK']._serialized_end=275
+  _globals['_UPLOADSONGREQUEST']._serialized_start=277
+  _globals['_UPLOADSONGREQUEST']._serialized_end=393
+  _globals['_UPLOADSONGRESPONSE']._serialized_start=395
+  _globals['_UPLOADSONGRESPONSE']._serialized_end=448
+  _globals['_DOWNLOADSONGREQUEST']._serialized_start=450
+  _globals['_DOWNLOADSONGREQUEST']._serialized_end=488
+  _globals['_DOWNLOADSONGMETADATA']._serialized_start=490
+  _globals['_DOWNLOADSONGMETADATA']._serialized_end=594
+  _globals['_DOWNLOADSONGCHUNK']._serialized_start=596
+  _globals['_DOWNLOADSONGCHUNK']._serialized_end=635
+  _globals['_DOWNLOADSONGRESPONSE']._serialized_start=637
+  _globals['_DOWNLOADSONGRESPONSE']._serialized_end=760
+  _globals['_DOWNLOADSONGDATA']._serialized_start=762
+  _globals['_DOWNLOADSONGDATA']._serialized_end=876
+  _globals['_SONGSERVICE']._serialized_start=879
+  _globals['_SONGSERVICE']._serialized_end=1163
 # @@protoc_insertion_point(module_scope)

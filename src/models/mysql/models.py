@@ -20,6 +20,18 @@ class Role(Base):
     AppUser: Mapped[List['AppUser']] = relationship('AppUser', back_populates='Role_')
 
 
+class SongExtension(Base):
+    __tablename__ = 'SongExtension'
+    __table_args__ = (
+        Index('extensionName', 'extensionName', unique=True),
+    )
+
+    idSongExtension: Mapped[int] = mapped_column(Integer, primary_key=True)
+    extensionName: Mapped[str] = mapped_column(String(70))
+
+    Song: Mapped[List['Song']] = relationship('Song', back_populates='SongExtension_')
+
+
 class SongGenre(Base):
     __tablename__ = 'SongGenre'
 
@@ -53,6 +65,7 @@ class Photo(Base):
     __tablename__ = 'Photo'
     __table_args__ = (
         ForeignKeyConstraint(['idUser'], ['AppUser.idUser'], name='Photo_ibfk_1'),
+        Index('fileName', 'fileName', unique=True),
         Index('idUser', 'idUser')
     )
 
@@ -68,21 +81,26 @@ class Photo(Base):
 class Song(Base):
     __tablename__ = 'Song'
     __table_args__ = (
-        ForeignKeyConstraint(['idAppUser'], ['AppUser.idUser'], name='Song_ibfk_2'),
+        ForeignKeyConstraint(['idAppUser'], ['AppUser.idUser'], name='Song_ibfk_3'),
+        ForeignKeyConstraint(['idSongExtension'], ['SongExtension.idSongExtension'], name='Song_ibfk_2'),
         ForeignKeyConstraint(['idSongGenre'], ['SongGenre.idSongGenre'], name='Song_ibfk_1'),
+        Index('fileName', 'fileName', unique=True),
         Index('idAppUser', 'idAppUser'),
+        Index('idSongExtension', 'idSongExtension'),
         Index('idSongGenre', 'idSongGenre')
     )
 
     idSong: Mapped[int] = mapped_column(Integer, primary_key=True)
     songName: Mapped[str] = mapped_column(String(100))
-    filePath: Mapped[str] = mapped_column(String(255))
+    fileName: Mapped[str] = mapped_column(String(255))
     durationSeconds: Mapped[int] = mapped_column(Integer)
     releaseDate: Mapped[datetime.datetime] = mapped_column(DateTime)
     idSongGenre: Mapped[int] = mapped_column(Integer)
+    idSongExtension: Mapped[int] = mapped_column(Integer)
     idAppUser: Mapped[int] = mapped_column(Integer)
 
     AppUser_: Mapped['AppUser'] = relationship('AppUser', back_populates='Song')
+    SongExtension_: Mapped['SongExtension'] = relationship('SongExtension', back_populates='Song')
     SongGenre_: Mapped['SongGenre'] = relationship('SongGenre', back_populates='Song')
     Visualization: Mapped[List['Visualization']] = relationship('Visualization', back_populates='Song_')
 

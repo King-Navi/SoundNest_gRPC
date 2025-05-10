@@ -20,14 +20,12 @@ class Song(google.protobuf.message.Message):
     FILE_FIELD_NUMBER: builtins.int
     ID_SONG_GENRE_FIELD_NUMBER: builtins.int
     DESCRIPTION_FIELD_NUMBER: builtins.int
+    EXTENSION_FIELD_NUMBER: builtins.int
     song_name: builtins.str
-    """Name of the song"""
     file: builtins.bytes
-    """Binary file content"""
     id_song_genre: builtins.int
-    """Genre ID of the song"""
     description: builtins.str
-    """Brief description of the song"""
+    extension: builtins.str
     def __init__(
         self,
         *,
@@ -35,8 +33,9 @@ class Song(google.protobuf.message.Message):
         file: builtins.bytes = ...,
         id_song_genre: builtins.int = ...,
         description: builtins.str = ...,
+        extension: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["description", b"description", "file", b"file", "id_song_genre", b"id_song_genre", "song_name", b"song_name"]) -> None: ...
+    def ClearField(self, field_name: typing.Literal["description", b"description", "extension", b"extension", "file", b"file", "id_song_genre", b"id_song_genre", "song_name", b"song_name"]) -> None: ...
 
 global___Song = Song
 
@@ -49,20 +48,20 @@ class UploadSongMetadata(google.protobuf.message.Message):
     SONG_NAME_FIELD_NUMBER: builtins.int
     ID_SONG_GENRE_FIELD_NUMBER: builtins.int
     DESCRIPTION_FIELD_NUMBER: builtins.int
+    EXTENSION_FIELD_NUMBER: builtins.int
     song_name: builtins.str
-    """Name of the song"""
     id_song_genre: builtins.int
-    """Genre ID of the song"""
     description: builtins.str
-    """Brief description of the song"""
+    extension: builtins.str
     def __init__(
         self,
         *,
         song_name: builtins.str = ...,
         id_song_genre: builtins.int = ...,
         description: builtins.str = ...,
+        extension: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["description", b"description", "id_song_genre", b"id_song_genre", "song_name", b"song_name"]) -> None: ...
+    def ClearField(self, field_name: typing.Literal["description", b"description", "extension", b"extension", "id_song_genre", b"id_song_genre", "song_name", b"song_name"]) -> None: ...
 
 global___UploadSongMetadata = UploadSongMetadata
 
@@ -74,7 +73,6 @@ class UploadSongChunk(google.protobuf.message.Message):
 
     CHUNK_DATA_FIELD_NUMBER: builtins.int
     chunk_data: builtins.bytes
-    """A chunk of the song file"""
     def __init__(
         self,
         *,
@@ -93,13 +91,9 @@ class UploadSongRequest(google.protobuf.message.Message):
     METADATA_FIELD_NUMBER: builtins.int
     CHUNK_FIELD_NUMBER: builtins.int
     @property
-    def metadata(self) -> global___UploadSongMetadata:
-        """Metadata for streaming upload"""
-
+    def metadata(self) -> global___UploadSongMetadata: ...
     @property
-    def chunk(self) -> global___UploadSongChunk:
-        """File chunk for streaming upload"""
-
+    def chunk(self) -> global___UploadSongChunk: ...
     def __init__(
         self,
         *,
@@ -121,9 +115,7 @@ class UploadSongResponse(google.protobuf.message.Message):
     RESULT_FIELD_NUMBER: builtins.int
     MESSAGE_FIELD_NUMBER: builtins.int
     result: builtins.bool
-    """True if operation succeeded"""
     message: builtins.str
-    """Message describing success or error"""
     def __init__(
         self,
         *,
@@ -142,7 +134,6 @@ class DownloadSongRequest(google.protobuf.message.Message):
 
     ID_SONG_FIELD_NUMBER: builtins.int
     id_song: builtins.str
-    """ID of the song to download"""
     def __init__(
         self,
         *,
@@ -161,20 +152,20 @@ class DownloadSongMetadata(google.protobuf.message.Message):
     SONG_NAME_FIELD_NUMBER: builtins.int
     ID_SONG_GENRE_FIELD_NUMBER: builtins.int
     DESCRIPTION_FIELD_NUMBER: builtins.int
+    EXTENSION_FIELD_NUMBER: builtins.int
     song_name: builtins.str
-    """Name of the song"""
     id_song_genre: builtins.int
-    """Genre ID of the song"""
     description: builtins.str
-    """Brief description of the song"""
+    extension: builtins.str
     def __init__(
         self,
         *,
         song_name: builtins.str = ...,
         id_song_genre: builtins.int = ...,
         description: builtins.str = ...,
+        extension: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["description", b"description", "id_song_genre", b"id_song_genre", "song_name", b"song_name"]) -> None: ...
+    def ClearField(self, field_name: typing.Literal["description", b"description", "extension", b"extension", "id_song_genre", b"id_song_genre", "song_name", b"song_name"]) -> None: ...
 
 global___DownloadSongMetadata = DownloadSongMetadata
 
@@ -186,7 +177,6 @@ class DownloadSongChunk(google.protobuf.message.Message):
 
     CHUNK_DATA_FIELD_NUMBER: builtins.int
     chunk_data: builtins.bytes
-    """A chunk of the song file"""
     def __init__(
         self,
         *,
@@ -205,13 +195,9 @@ class DownloadSongResponse(google.protobuf.message.Message):
     METADATA_FIELD_NUMBER: builtins.int
     CHUNK_FIELD_NUMBER: builtins.int
     @property
-    def metadata(self) -> global___DownloadSongMetadata:
-        """Metadata for streaming download"""
-
+    def metadata(self) -> global___DownloadSongMetadata: ...
     @property
-    def chunk(self) -> global___DownloadSongChunk:
-        """File chunk for streaming download"""
-
+    def chunk(self) -> global___DownloadSongChunk: ...
     def __init__(
         self,
         *,
@@ -234,14 +220,12 @@ class DownloadSongData(google.protobuf.message.Message):
     FILE_FIELD_NUMBER: builtins.int
     ID_SONG_GENRE_FIELD_NUMBER: builtins.int
     DESCRIPTION_FIELD_NUMBER: builtins.int
+    EXTENSION_FIELD_NUMBER: builtins.int
     song_name: builtins.str
-    """Name of the song"""
     file: builtins.bytes
-    """Binary file content"""
     id_song_genre: builtins.int
-    """Genre ID of the song"""
     description: builtins.str
-    """Brief description of the song"""
+    extension: builtins.str
     def __init__(
         self,
         *,
@@ -249,7 +233,8 @@ class DownloadSongData(google.protobuf.message.Message):
         file: builtins.bytes = ...,
         id_song_genre: builtins.int = ...,
         description: builtins.str = ...,
+        extension: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["description", b"description", "file", b"file", "id_song_genre", b"id_song_genre", "song_name", b"song_name"]) -> None: ...
+    def ClearField(self, field_name: typing.Literal["description", b"description", "extension", b"extension", "file", b"file", "id_song_genre", b"id_song_genre", "song_name", b"song_name"]) -> None: ...
 
 global___DownloadSongData = DownloadSongData

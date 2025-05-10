@@ -1,23 +1,26 @@
 import grpc
 import jwt
 import os
+import logging
 from dotenv import load_dotenv
 
 load_dotenv()
-SECRET_KEY = os.getenv("SECRET_KEY")
+JWT_SECRET = os.getenv("JWT_SECRET")
 
 #/<package>.<Service>/<Method>
 PUBLIC_METHODS = [
-    '/soundnest.FileUploader/PublicMethod',
+    '/controller.song_controller.SongController/DownloadSongStream',
+    '/controller.song_controller.SongController/DownloadSong',
 ]
 
 class JWTInterceptor(grpc.ServerInterceptor):
     def intercept_service(self, continuation, handler_call_details):
+        logging.debug("JWT Interceptor...")
         method_name = handler_call_details.method
 
         if method_name in PUBLIC_METHODS:
-            #lo dejamos pasar sin validar JWT
-            return continuation(handler_call_details)     
+            return continuation(handler_call_details)
+
         metadata = dict(handler_call_details.invocation_metadata)
         token = metadata.get('authorization')
 
@@ -26,7 +29,7 @@ class JWTInterceptor(grpc.ServerInterceptor):
 
         jwt_token = token.split(" ")[1]
         try:
-            payload = jwt.decode(jwt_token, SECRET_KEY, algorithms=["HS256"])
+            payload = jwt.decode(jwt_token, JWT_SECRET, algorithms=["HS256"])
         except jwt.ExpiredSignatureError:
             return self._abort('Token expired')
         except jwt.InvalidTokenError:
@@ -34,15 +37,53 @@ class JWTInterceptor(grpc.ServerInterceptor):
 
         handler = continuation(handler_call_details)
 
-        def new_behavior(request, context):
-            setattr(context, 'jwt_payload', payload)
-            return handler.unary_unary(request, context)
+        if handler.unary_unary:
+            def new_behavior(request, context):
+                setattr(context, 'jwt_payload', payload)
+                return handler.unary_unary(request, context)
 
-        return grpc.unary_unary_rpc_method_handler(
-            new_behavior,
-            request_deserializer=handler.request_deserializer,
-            response_serializer=handler.response_serializer,
-        )
+            return grpc.unary_unary_rpc_method_handler(
+                new_behavior,
+                request_deserializer=handler.request_deserializer,
+                response_serializer=handler.response_serializer
+            )
+
+        elif handler.unary_stream:
+            def new_behavior(request, context):
+                setattr(context, 'jwt_payload', payload)
+                return handler.unary_stream(request, context)
+
+            return grpc.unary_stream_rpc_method_handler(
+                new_behavior,
+                request_deserializer=handler.request_deserializer,
+                response_serializer=handler.response_serializer
+            )
+
+        elif handler.stream_unary:
+            def new_behavior(request_iterator, context):
+                setattr(context, 'jwt_payload', payload)
+                return handler.stream_unary(request_iterator, context)
+
+            return grpc.stream_unary_rpc_method_handler(
+                new_behavior,
+                request_deserializer=handler.request_deserializer,
+                response_serializer=handler.response_serializer
+            )
+
+        elif handler.stream_stream:
+            def new_behavior(request_iterator, context):
+                setattr(context, 'jwt_payload', payload)
+                return handler.stream_stream(request_iterator, context)
+
+            return grpc.stream_stream_rpc_method_handler(
+                new_behavior,
+                request_deserializer=handler.request_deserializer,
+                response_serializer=handler.response_serializer
+            )
+
+        else:
+            # Fallback: sin intervención
+            return handler
     
     def _abort(self, message):
         def abort_behavior(request, context):

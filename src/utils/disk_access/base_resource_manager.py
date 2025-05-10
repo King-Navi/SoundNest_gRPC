@@ -25,7 +25,7 @@ class BaseResourceManager:
         """
         raise NotImplementedError("Subclasses must implement _get_file_path")
 
-    def read_resource(self, resource_id: tuple, binary=True):
+    def read_resource(self, resource_id: tuple, binary=True)-> bytes|str:
         resource_key = self._get_resource_key(resource_id)
         lock = self._get_lock(resource_key)
         mode = "rb" if binary else "r"

@@ -6,7 +6,7 @@ from concurrent import futures
 from dependency_injector.wiring import Provider, inject
 
 from user_photo import user_image_pb2 , user_image_pb2_grpc
-from src.services.user_images_service import UserImageService
+from services.user_images_service import UserImageService
 
 class UserImageController(user_image_pb2_grpc.UserImageServiceServicer):
     @inject
