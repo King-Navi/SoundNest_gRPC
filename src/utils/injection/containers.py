@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 
 from repository.photo_repository import PhotoRepository
 from repository.song_repository import SongRepository
+from repository.song_extension_repository import SongExtensionRepository
 from controller.user_controller import UserImageController
 from controller.song_controller import SongController
 from services.user_images_service import UserImageService
@@ -25,10 +26,14 @@ class Container(containers.DeclarativeContainer):
     comments_collection = providers.Object(mongo_db[MONGO_COLLECTION_COMMENTS])
     additional_info_collection = providers.Object(mongo_db[MONGO_COLLECTION_ADDITIONAL_INFO])
     notifications_collection = providers.Object(mongo_db[MONGO_COLLECTION_NOTIFICATIONS])
-
+    
     user_image_manager = providers.Singleton(UserImageManager, base_dir=USER_IMAGE_PATH)
     song_file_manager = providers.Singleton(SognFileManager, base_dir=PATH_SONG)
 
+    song_extension_repository = providers.Factory(
+        SongExtensionRepository,
+        session=providers.Callable(SessionLocal)
+    )
     song_repository = providers.Factory(
         SongRepository,
         session=providers.Callable(SessionLocal)
@@ -50,7 +55,8 @@ class Container(containers.DeclarativeContainer):
     song_file_service = providers.Factory(
         SongService,
         song_manager = song_file_manager,
-        song_repository = song_repository
+        song_repository = song_repository,
+        song_extension_repository = song_extension_repository
     )
     song_file_controller = providers.Factory(
         SongController,

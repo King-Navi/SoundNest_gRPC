@@ -26,6 +26,6 @@ class NotificationModel(BaseModel):
     user_id: int
     user: str
     notification: str
-    relevance: Optional[str] = 'LOW'
+    relevance: Optional[str] = 'low'
     createdAt: Optional[datetime] = Field(default_factory=datetime.utcnow)
     read: Optional[bool] = False

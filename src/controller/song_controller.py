@@ -5,7 +5,7 @@ from dependency_injector.wiring import Provider, inject
 from streaming import song_pb2, song_pb2_grpc
 
 from services.song_service import SongService
-from utils.wrappers.song_wrapper import SongWithFile
+from utils.wrappers.song_wrapper import SongWithFile , Song
 
 
 class SongController(song_pb2_grpc.SongServiceServicer):
@@ -70,10 +70,10 @@ class SongController(song_pb2_grpc.SongServiceServicer):
             # send metadata
             yield song_pb2.DownloadSongResponse( # pylint: disable=E1101
                 metadata=song_pb2.DownloadSongMetadata( # pylint: disable=E1101
-                    song_name=song_entity.song_name,
-                    id_song_genre=song_entity.id_song_genre,
-                    description=song_entity.description,
-                    extension=song_entity.extension
+                    song_name=song_entity.fileName,
+                    id_song_genre=song_entity.idSongGenre,
+                    description="song_entity.description", #TODO:
+                    extension="song_entity.extension" #TODO:
                 )
             )
 
@@ -88,14 +88,17 @@ class SongController(song_pb2_grpc.SongServiceServicer):
 
     def DownloadSong(self, request: song_pb2.DownloadSongRequest, context: grpc.ServicerContext) -> song_pb2.DownloadSongData: #pylint: disable=E1101:no-member
         try:
+            logging.debug(f"Tipo de request: {type(request)}")
+            logging.debug(f"Contenido recibido: {request}")
+            logging.debug(f"[DownloadSong] request.ListFields: {request.ListFields()}")
             result : SongWithFile = self.song_service.handle_download(request.id_song)
 
             return song_pb2.DownloadSongData( # pylint: disable=E1101
-                song_name= result.song.song_name,
+                song_name= result.song.fileName,
                 file=result.file_content,
-                id_song_genre=result.song.id_song_genre,
-                description=result.song.description,
-                extension=result.song.extension
+                id_song_genre=result.song.idSongGenre,
+                description="#TODO: Ivan no ha hecho esto porque se canso", #TODO: Ivan no ha hecho esto porque se canso
+                extension="result.song.idSongExtension"
             )
         except Exception as e:
             context.abort(grpc.StatusCode.NOT_FOUND, f"Song not found: {str(e)}")

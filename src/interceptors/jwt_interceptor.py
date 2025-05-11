@@ -9,13 +9,14 @@ JWT_SECRET = os.getenv("JWT_SECRET")
 
 #/<package>.<Service>/<Method>
 PUBLIC_METHODS = [
-    '/controller.song_controller.SongController/DownloadSongStream',
-    '/controller.song_controller.SongController/DownloadSong',
+    '/song.SongService/DownloadSong',
+    '/song.SongService/DownloadSongStream',
 ]
 
 class JWTInterceptor(grpc.ServerInterceptor):
     def intercept_service(self, continuation, handler_call_details):
         logging.debug("JWT Interceptor...")
+        print("Intercepted gRPC method:", handler_call_details.method)
         method_name = handler_call_details.method
 
         if method_name in PUBLIC_METHODS:

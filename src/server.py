@@ -25,11 +25,17 @@ ENVIROMENT = os.getenv("ENVIROMENT", "production")
 def serve(): # pylint: disable=C0116
     container = Container()
     container.wire(modules=[
-        "controller.user_controller"
+        "controller.user_controller",
+        "controller.song_controller"
         # otros módulos que tengan Provide[]
     ])
     server = grpc.server(
         futures.ThreadPoolExecutor(max_workers=10)
+        ,
+        options=[
+            ('grpc.max_send_message_length', 100 * 1024 * 1024),  # 100 MB
+            ('grpc.max_receive_message_length', 100 * 1024 * 1024)
+        ]
         ,
         interceptors=[JWTInterceptor()]
     )

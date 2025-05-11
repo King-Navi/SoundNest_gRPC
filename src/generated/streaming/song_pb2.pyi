@@ -133,11 +133,11 @@ class DownloadSongRequest(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     ID_SONG_FIELD_NUMBER: builtins.int
-    id_song: builtins.str
+    id_song: builtins.int
     def __init__(
         self,
         *,
-        id_song: builtins.str = ...,
+        id_song: builtins.int = ...,
     ) -> None: ...
     def ClearField(self, field_name: typing.Literal["id_song", b"id_song"]) -> None: ...
 

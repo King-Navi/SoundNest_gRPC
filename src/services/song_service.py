@@ -1,10 +1,12 @@
 import uuid
 import datetime
+import logging
 from typing import Iterator
 from dependency_injector.wiring import inject
 from generated.streaming.song_pb2 import  UploadSongMetadata #pylint: disable=E0611
 from models.mysql.models import Song
 from repository.song_repository import SongRepository
+from repository.song_extension_repository import SongExtensionRepository
 from utils.disk_access.utilities import generate_unique_resource_id_song, is_valid_extension_song
 from utils.disk_access.song_file import SognFileManager
 from utils.wrappers.song_wrapper import SongWithFile
@@ -16,10 +18,12 @@ class SongService:
     @inject
     def __init__(self,
                 song_manager: SognFileManager,
-                song_repository : SongRepository
+                song_repository : SongRepository,
+                song_extension_repository : SongExtensionRepository
                 ):
         self.song_manager :SognFileManager = song_manager
         self.song_repository :SongRepository = song_repository
+        self.song_extension_repository : SongExtensionRepository = song_extension_repository
     def handle_upload(
             self,user_id: int ,
             song_name : str,
@@ -37,6 +41,7 @@ class SongService:
             durationSeconds=round(self.song_manager.get_audio_duration(resource_id, extension)),
             releaseDate=datetime.datetime.now(),
             idSongGenre=id_song_genre,
+            idSongExtension= self.song_extension_repository.get_extension_id_by_name(extension),
             idAppUser=user_id
         )
         self.song_repository.insert_song( new_song )
@@ -68,7 +73,7 @@ class SongService:
             durationSeconds=round(self.song_manager.get_audio_duration(resource_id, metadata.extension)),
             releaseDate=datetime.datetime.now(),
             idSongGenre=metadata.id_song_genre,
-            idSongExtension= metadata.extension,
+            idSongExtension= self.song_extension_repository.get_extension_id_by_name(metadata.extension),
             idAppUser=user_id
         )
         self.song_repository.insert_song( new_song )
@@ -81,16 +86,21 @@ class SongService:
 
     def handle_download(self, song_id : int) -> Song:
         #TODO: CADA VEZ SE TIENE QUE AUMENTAR LA VISAULIZACION SI NO ES AQUI ES EN RESTFUL
+        logging.debug(f"[song_service.py] song_id recibido: {song_id}")
         song: Song = self.song_repository.get_song_by_id(song_id)
-        file_bytes: bytes = self.song_manager.load_song_file(song.fileName, song.extension)
+        if song is None:
+            raise ValueError("Song not found")
+        file_bytes: bytes = self.song_manager.load_song_file(song.fileName, self.song_extension_repository.get_extension_name_by_id(song.idSongExtension))
         songWrapper = SongWithFile(song=song, file_content=file_bytes)
         return songWrapper
     
     def handle_download_stream(self, song_id: int) -> tuple[Song, Iterator[bytes]]:
         #TODO: CADA VEZ SE TIENE QUE AUMENTAR LA VISAULIZACION SI NO ES AQUI ES EN RESTFUL
-
+        logging.debug(f"[song_service.py] song_id recibido: {song_id}")
         song: Song = self.song_repository.get_song_by_id(song_id)
-        chunk_generator = self.song_manager.read_resource_stream((song.fileName, song.extension))
+        if song is None:
+            raise ValueError("Song not found")
+        chunk_generator = self.song_manager.read_resource_stream((song.fileName, self.song_extension_repository.get_extension_name_by_id(song.idSongExtension)))
         return song, chunk_generator
 
     def _generate_unique_resource_id(self) -> str:
@@ -109,3 +119,5 @@ def check_arguments_upload_streaming(metadata , total_bytes):
 def is_valid_extension(extension :str):
     if not extension or extension.lower() not in VALID_EXTENSIONS:
         raise ValueError(f"Invalid or missing file extension. Supported extensions: {VALID_EXTENSIONS}")
+    
+

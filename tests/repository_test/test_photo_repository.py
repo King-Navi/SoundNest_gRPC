@@ -1,6 +1,5 @@
 import pytest
 from src.repository.photo_repository import PhotoRepository
-from src.models.mysql.models import Base, Photo
 
 from src.config.connection_mysql import engine , SessionLocal
 
