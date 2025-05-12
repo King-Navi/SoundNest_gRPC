@@ -102,7 +102,25 @@ class Song(Base):
     AppUser_: Mapped['AppUser'] = relationship('AppUser', back_populates='Song')
     SongExtension_: Mapped['SongExtension'] = relationship('SongExtension', back_populates='Song')
     SongGenre_: Mapped['SongGenre'] = relationship('SongGenre', back_populates='Song')
+    SongPhoto: Mapped[List['SongPhoto']] = relationship('SongPhoto', back_populates='Song_')
     Visualization: Mapped[List['Visualization']] = relationship('Visualization', back_populates='Song_')
+
+
+class SongPhoto(Base):
+    __tablename__ = 'SongPhoto'
+    __table_args__ = (
+        ForeignKeyConstraint(['idSong'], ['Song.idSong'], name='SongPhoto_ibfk_1'),
+        Index('fileName', 'fileName', unique=True),
+        Index('idSong', 'idSong')
+    )
+
+    idSongPhoto: Mapped[int] = mapped_column(Integer, primary_key=True)
+    fileName: Mapped[str] = mapped_column(String(100))
+    extension: Mapped[str] = mapped_column(String(50))
+    createdAt: Mapped[datetime.datetime] = mapped_column(DateTime)
+    idSong: Mapped[int] = mapped_column(Integer)
+
+    Song_: Mapped['Song'] = relationship('Song', back_populates='SongPhoto')
 
 
 class Visualization(Base):

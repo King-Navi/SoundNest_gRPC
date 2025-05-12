@@ -37,7 +37,7 @@ class SongController(song_pb2_grpc.SongServiceServicer):
             )
         except Exception as e:
             return song_pb2.UploadSongResponse( # pylint: disable=E1101
-                success=False,
+                result=False,
                 message=f"Failed to upload Song: {str(e)}"
             )
         
@@ -59,7 +59,7 @@ class SongController(song_pb2_grpc.SongServiceServicer):
             )
         except Exception as e:
             return song_pb2.UploadSongResponse( # pylint: disable=E1101
-                success=False,
+                result=False,
                 message=f"Failed to upload Song: {str(e)}"
             )
 
