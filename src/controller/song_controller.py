@@ -1,6 +1,8 @@
 import logging
 from typing import Iterator, Optional
 import grpc
+from grpc.aio import ServicerContext
+
 from dependency_injector.wiring import Provider, inject
 from streaming import song_pb2, song_pb2_grpc
 
@@ -13,7 +15,7 @@ class SongController(song_pb2_grpc.SongServiceServicer):
     def __init__(self, song_service: SongService = Provider["song_service"]):
         self.song_service = song_service
 
-    def UploadSong(self, request: song_pb2.Song, context: grpc.ServicerContext) -> song_pb2.UploadSongResponse: #pylint: disable=E1101:no-member
+    async def UploadSong(self, request: song_pb2.Song, context: ServicerContext) -> song_pb2.UploadSongResponse: #pylint: disable=E1101:no-member
         jwt_payload = getattr(context, 'jwt_payload', None)
         if not jwt_payload:
             context.abort(grpc.StatusCode.UNAUTHENTICATED, "Missing authentication token")
@@ -41,7 +43,7 @@ class SongController(song_pb2_grpc.SongServiceServicer):
                 message=f"Failed to upload Song: {str(e)}"
             )
         
-    def UploadSongStream(self,  request_iterator: Iterator[song_pb2.UploadSongRequest], context: grpc.ServicerContext)-> song_pb2.UploadSongResponse: # pylint: disable=E1101
+    async def UploadSongStream(self,  request_iterator: Iterator[song_pb2.UploadSongRequest], context: ServicerContext)-> song_pb2.UploadSongResponse: # pylint: disable=E1101
         jwt_payload = getattr(context, 'jwt_payload', None)
         if not jwt_payload:
             context.abort(grpc.StatusCode.UNAUTHENTICATED, "Missing authentication token")
@@ -63,7 +65,7 @@ class SongController(song_pb2_grpc.SongServiceServicer):
                 message=f"Failed to upload Song: {str(e)}"
             )
 
-    def DownloadSongStream(self, request: song_pb2.DownloadSongRequest, context: grpc.ServicerContext)-> Iterator[song_pb2.DownloadSongResponse] : #pylint: disable=E1101:no-member
+    async def DownloadSongStream(self, request: song_pb2.DownloadSongRequest, context: ServicerContext)-> Iterator[song_pb2.DownloadSongResponse] : #pylint: disable=E1101:no-member
         try:
             song_entity, chunk_generator = self.song_service.handle_download_stream(request.id_song)
             
@@ -86,7 +88,7 @@ class SongController(song_pb2_grpc.SongServiceServicer):
         except Exception as e:
             context.abort(grpc.StatusCode.NOT_FOUND, f"Song not found or failed: {str(e)}")
 
-    def DownloadSong(self, request: song_pb2.DownloadSongRequest, context: grpc.ServicerContext) -> song_pb2.DownloadSongData: #pylint: disable=E1101:no-member
+    async def DownloadSong(self, request: song_pb2.DownloadSongRequest, context: ServicerContext) -> song_pb2.DownloadSongData: #pylint: disable=E1101:no-member
         try:
             logging.debug(f"Tipo de request: {type(request)}")
             logging.debug(f"Contenido recibido: {request}")

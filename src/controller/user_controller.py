@@ -1,10 +1,9 @@
-import os
-import tempfile
-import grpc
+import asyncio
 from typing import Iterator, Optional
 from concurrent import futures
 from dependency_injector.wiring import Provider, inject
-
+from grpc.aio import ServicerContext
+import grpc
 from user_photo import user_image_pb2 , user_image_pb2_grpc
 from services.user_images_service import UserImageService
 
@@ -13,10 +12,10 @@ class UserImageController(user_image_pb2_grpc.UserImageServiceServicer):
     def __init__(self, image_service: UserImageService = Provider["user_image_service"]):
         self.image_service = image_service
 
-    def UploadImage(
+    async def UploadImage(
         self,
         request: user_image_pb2.UploadImageRequest,# pylint: disable=E1101
-        context: grpc.ServicerContext
+        context: ServicerContext
     ) -> user_image_pb2.UploadImageRequest: # pylint: disable=E1101
         try:
             self.image_service.upload_image(
@@ -34,10 +33,10 @@ class UserImageController(user_image_pb2_grpc.UserImageServiceServicer):
                 success=False,
                 message=f"Failed to upload image: {str(e)}"
             )
-    def DownloadImage(
+    async def DownloadImage(
         self,
         request: user_image_pb2.DownloadImageRequest, # pylint: disable=E1101
-        context: grpc.ServicerContext
+        context: ServicerContext
     ) -> user_image_pb2.DownloadImageResponse: # pylint: disable=E1101
         try:
             photos = self.image_service.photo_repository.get_photos_by_user_id(request.user_id)

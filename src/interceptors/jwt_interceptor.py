@@ -1,8 +1,10 @@
-import grpc
-import jwt
 import os
 import logging
+from grpc.aio import ServerInterceptor, ServicerContext
+import jwt
+
 from dotenv import load_dotenv
+import grpc
 
 load_dotenv()
 JWT_SECRET = os.getenv("JWT_SECRET")
@@ -11,16 +13,17 @@ JWT_SECRET = os.getenv("JWT_SECRET")
 PUBLIC_METHODS = [
     '/song.SongService/DownloadSong',
     '/song.SongService/DownloadSongStream',
+    '/event.EventService/Event', #TODO: REMOVE
 ]
 
-class JWTInterceptor(grpc.ServerInterceptor):
-    def intercept_service(self, continuation, handler_call_details):
+class JWTInterceptor(ServerInterceptor):
+    async def intercept_service(self, continuation, handler_call_details):
         logging.debug("JWT Interceptor...")
         print("Intercepted gRPC method:", handler_call_details.method)
         method_name = handler_call_details.method
 
         if method_name in PUBLIC_METHODS:
-            return continuation(handler_call_details)
+            return await continuation(handler_call_details)
 
         metadata = dict(handler_call_details.invocation_metadata)
         token = metadata.get('authorization')
@@ -36,57 +39,52 @@ class JWTInterceptor(grpc.ServerInterceptor):
         except jwt.InvalidTokenError:
             return self._abort('Invalid token')
 
-        handler = continuation(handler_call_details)
-
-        if handler.unary_unary:
-            def new_behavior(request, context):
+        handler = await continuation(handler_call_details)
+        if handler is None:
+            return None
+        
+        # Envuelve según el tipo
+        if handler.request_streaming and handler.response_streaming:
+            async def new_behavior(request_iterator, context: ServicerContext):
                 setattr(context, 'jwt_payload', payload)
-                return handler.unary_unary(request, context)
-
-            return grpc.unary_unary_rpc_method_handler(
+                return await handler.stream_stream(request_iterator, context)
+            return grpc.aio.stream_stream_rpc_method_handler(
                 new_behavior,
                 request_deserializer=handler.request_deserializer,
                 response_serializer=handler.response_serializer
             )
 
-        elif handler.unary_stream:
-            def new_behavior(request, context):
+        elif handler.request_streaming:
+            async def new_behavior(request_iterator, context: ServicerContext):
                 setattr(context, 'jwt_payload', payload)
-                return handler.unary_stream(request, context)
-
-            return grpc.unary_stream_rpc_method_handler(
+                return await handler.stream_unary(request_iterator, context)
+            return grpc.aio.stream_unary_rpc_method_handler(
                 new_behavior,
                 request_deserializer=handler.request_deserializer,
                 response_serializer=handler.response_serializer
             )
 
-        elif handler.stream_unary:
-            def new_behavior(request_iterator, context):
+        elif handler.response_streaming:
+            async def new_behavior(request, context: ServicerContext):
                 setattr(context, 'jwt_payload', payload)
-                return handler.stream_unary(request_iterator, context)
-
-            return grpc.stream_unary_rpc_method_handler(
-                new_behavior,
-                request_deserializer=handler.request_deserializer,
-                response_serializer=handler.response_serializer
-            )
-
-        elif handler.stream_stream:
-            def new_behavior(request_iterator, context):
-                setattr(context, 'jwt_payload', payload)
-                return handler.stream_stream(request_iterator, context)
-
-            return grpc.stream_stream_rpc_method_handler(
+                return await handler.unary_stream(request, context)
+            return grpc.aio.unary_stream_rpc_method_handler(
                 new_behavior,
                 request_deserializer=handler.request_deserializer,
                 response_serializer=handler.response_serializer
             )
 
         else:
-            # Fallback: sin intervención
-            return handler
+            async def new_behavior(request, context: ServicerContext):
+                setattr(context, 'jwt_payload', payload)
+                return await handler.unary_unary(request, context)
+            return grpc.aio.unary_unary_rpc_method_handler(
+                new_behavior,
+                request_deserializer=handler.request_deserializer,
+                response_serializer=handler.response_serializer
+            )
     
     def _abort(self, message):
-        def abort_behavior(request, context):
+        async def abort_behavior(request, context):
             context.abort(grpc.StatusCode.UNAUTHENTICATED, message)
-        return grpc.unary_unary_rpc_method_handler(abort_behavior)
+        return grpc.aio.unary_unary_rpc_method_handler(abort_behavior)

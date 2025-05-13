@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package event;
+
+enum EventType {
+  UNKNOWN = 0;
+  CUSTOM = 1;
+  NOTIFICATION = 2;
+  DATA_UPDATE = 3;
+}
+
+message EventMessageRequest {
+  EventType event_type = 1;
+  string custom_event_type = 2;
+  string payload = 3;
+}
+
+message EventMessageReturn {
+  EventType event_type_respose = 1;
+  string custom_event_type = 2;
+  bool is_succes_event = 3;
+  string message = 4;
+  string timestamp = 5;
+  string status = 6;
+}
+
+service EventService {
+  rpc Event (stream EventMessageRequest) returns (stream EventMessageReturn);
+}

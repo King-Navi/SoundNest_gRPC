@@ -7,8 +7,9 @@ GENERATED = os.path.join(SRC_DIR, "generated")
 sys.path.insert(0, GENERATED)
 from concurrent import futures
 import threading, signal, sys as _sys
-import grpc
+from grpc import aio
 from dotenv import load_dotenv
+from event import event_pb2_grpc
 from streaming import song_pb2_grpc
 from user_photo import user_image_pb2_grpc
 from http.server import HTTPServer
@@ -22,16 +23,14 @@ from utils.check_connection import start_http_health_server
 load_dotenv()
 PORT = os.getenv("PYTHON_PORT")
 ENVIROMENT = os.getenv("ENVIROMENT", "production")
-def serve(): # pylint: disable=C0116
+async def serve(): # pylint: disable=C0116
     container = Container()
     container.wire(modules=[
         "controller.user_controller",
         "controller.song_controller"
         # otros módulos que tengan Provide[]
     ])
-    server = grpc.server(
-        futures.ThreadPoolExecutor(max_workers=10)
-        ,
+    server =  aio.server(
         options=[
             ('grpc.max_send_message_length', 100 * 1024 * 1024),  # 100 MB
             ('grpc.max_receive_message_length', 100 * 1024 * 1024)
@@ -39,29 +38,32 @@ def serve(): # pylint: disable=C0116
         ,
         interceptors=[JWTInterceptor()]
     )
+    event_controller = container.event_controller()
     user_image_controller = container.user_image_controller()
     song_controller = container.song_file_controller()
+    event_pb2_grpc.add_EventServiceServicer_to_server(event_controller, server)
     song_pb2_grpc.add_SongServiceServicer_to_server(song_controller, server)
     user_image_pb2_grpc.add_UserImageServiceServicer_to_server( user_image_controller, server)
     server.add_insecure_port(f'[::]:{PORT}')
 
-    server.start()
+    await server.start()
     print(f'gRPC server running on port {PORT}...')
     if ENVIROMENT == "development":
         logging.debug("Enter development mode...")
-        def shutdown(signum, frame): # pylint: disable=W0613
+        async def shutdown(signum, frame): # pylint: disable=W0613
             print("Shutting down gRPC server...")
-            server.stop(0)
+            await server.stop(0)
             sys.exit(0)
         signal.signal(signal.SIGINT, shutdown)
         signal.signal(signal.SIGTERM, shutdown)
-    server.wait_for_termination()
+    await server.wait_for_termination()
 
 def initialize():
+    import asyncio
     if ENVIROMENT == "development":
         logging.basicConfig(level=logging.DEBUG)
         threading.Thread(target=start_http_health_server, daemon=True).start()
-    serve()
+    asyncio.run(serve())
 
 if __name__ == '__main__':
     initialize()
