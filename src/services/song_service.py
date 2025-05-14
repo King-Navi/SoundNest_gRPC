@@ -40,6 +40,7 @@ class SongService:
             fileName=resource_id,
             durationSeconds=round(self.song_manager.get_audio_duration(resource_id, extension)),
             releaseDate=datetime.datetime.now(),
+            isDeleted=False,
             idSongGenre=id_song_genre,
             idSongExtension= self.song_extension_repository.get_extension_id_by_name(extension),
             idAppUser=user_id
@@ -72,6 +73,7 @@ class SongService:
             fileName=resource_id,
             durationSeconds=round(self.song_manager.get_audio_duration(resource_id, metadata.extension)),
             releaseDate=datetime.datetime.now(),
+            isDeleted=False,
             idSongGenre=metadata.id_song_genre,
             idSongExtension= self.song_extension_repository.get_extension_id_by_name(metadata.extension),
             idAppUser=user_id
@@ -91,8 +93,8 @@ class SongService:
         if song is None:
             raise ValueError("Song not found")
         file_bytes: bytes = self.song_manager.load_song_file(song.fileName, self.song_extension_repository.get_extension_name_by_id(song.idSongExtension))
-        songWrapper = SongWithFile(song=song, file_content=file_bytes)
-        return songWrapper
+        song_wrapper = SongWithFile(song=song, file_content=file_bytes)
+        return song_wrapper
     
     def handle_download_stream(self, song_id: int) -> tuple[Song, Iterator[bytes]]:
         #TODO: CADA VEZ SE TIENE QUE AUMENTAR LA VISAULIZACION SI NO ES AQUI ES EN RESTFUL
@@ -119,5 +121,3 @@ def check_arguments_upload_streaming(metadata , total_bytes):
 def is_valid_extension(extension :str):
     if not extension or extension.lower() not in VALID_EXTENSIONS:
         raise ValueError(f"Invalid or missing file extension. Supported extensions: {VALID_EXTENSIONS}")
-    
-

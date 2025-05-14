@@ -1,6 +1,7 @@
 from typing import List, Optional
 
 from sqlalchemy import Date, DateTime, ForeignKeyConstraint, Index, Integer, String
+from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 import datetime
 
@@ -95,6 +96,7 @@ class Song(Base):
     fileName: Mapped[str] = mapped_column(String(255))
     durationSeconds: Mapped[int] = mapped_column(Integer)
     releaseDate: Mapped[datetime.datetime] = mapped_column(DateTime)
+    isDeleted: Mapped[int] = mapped_column(TINYINT(1))
     idSongGenre: Mapped[int] = mapped_column(Integer)
     idSongExtension: Mapped[int] = mapped_column(Integer)
     idAppUser: Mapped[int] = mapped_column(Integer)
