@@ -1,11 +1,11 @@
-import os
-import logging
-from grpc.aio import ServerInterceptor, ServicerContext
-import jwt
-
-from dotenv import load_dotenv
 import grpc
-
+import os
+import contextvars
+import jwt
+from dotenv import load_dotenv
+from grpc.aio import ServerInterceptor
+from grpc import StatusCode
+from grpc import RpcMethodHandler
 load_dotenv()
 JWT_SECRET = os.getenv("JWT_SECRET")
 
@@ -16,75 +16,74 @@ PUBLIC_METHODS = [
     '/event.EventService/Event', #TODO: REMOVE
 ]
 
+# ContextVar para propagar el payload
+_JWT_PAYLOAD = contextvars.ContextVar("jwt_payload")
+
 class JWTInterceptor(ServerInterceptor):
     async def intercept_service(self, continuation, handler_call_details):
-        logging.debug("JWT Interceptor...")
-        print("Intercepted gRPC method:", handler_call_details.method)
-        method_name = handler_call_details.method
-
-        if method_name in PUBLIC_METHODS:
+        if handler_call_details.method in PUBLIC_METHODS:
             return await continuation(handler_call_details)
-
-        metadata = dict(handler_call_details.invocation_metadata)
-        token = metadata.get('authorization')
-
-        if token is None or not token.startswith("Bearer "):
-            return self._abort('Missing or invalid Authorization header')
-
-        jwt_token = token.split(" ")[1]
-        try:
-            payload = jwt.decode(jwt_token, JWT_SECRET, algorithms=["HS256"])
-        except jwt.ExpiredSignatureError:
-            return self._abort('Token expired')
-        except jwt.InvalidTokenError:
-            return self._abort('Invalid token')
 
         handler = await continuation(handler_call_details)
         if handler is None:
             return None
+        async def _validate_and_set(context):
+            md = dict(context.invocation_metadata())
+            auth = md.get("authorization", "")
+            if not auth.startswith("Bearer "):
+                await context.abort(StatusCode.UNAUTHENTICATED,
+                              "Missing or invalid Authorization header")
+            token = auth.split(" ", 1)[1]
+            try:
+                payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+            except jwt.ExpiredSignatureError:
+                await context.abort(StatusCode.UNAUTHENTICATED, "Token expired")
+            except jwt.InvalidTokenError:
+                await context.abort(StatusCode.UNAUTHENTICATED, "Invalid token")
+
+            _JWT_PAYLOAD.set(payload)
+
         
-        # Envuelve según el tipo
-        if handler.request_streaming and handler.response_streaming:
-            async def new_behavior(request_iterator, context: ServicerContext):
-                setattr(context, 'jwt_payload', payload)
-                return await handler.stream_stream(request_iterator, context)
-            return grpc.aio.stream_stream_rpc_method_handler(
-                new_behavior,
-                request_deserializer=handler.request_deserializer,
-                response_serializer=handler.response_serializer
-            )
-
-        elif handler.request_streaming:
-            async def new_behavior(request_iterator, context: ServicerContext):
-                setattr(context, 'jwt_payload', payload)
-                return await handler.stream_unary(request_iterator, context)
-            return grpc.aio.stream_unary_rpc_method_handler(
-                new_behavior,
-                request_deserializer=handler.request_deserializer,
-                response_serializer=handler.response_serializer
-            )
-
-        elif handler.response_streaming:
-            async def new_behavior(request, context: ServicerContext):
-                setattr(context, 'jwt_payload', payload)
-                return await handler.unary_stream(request, context)
-            return grpc.aio.unary_stream_rpc_method_handler(
-                new_behavior,
-                request_deserializer=handler.request_deserializer,
-                response_serializer=handler.response_serializer
-            )
-
-        else:
-            async def new_behavior(request, context: ServicerContext):
-                setattr(context, 'jwt_payload', payload)
+        if not handler.request_streaming and not handler.response_streaming:
+            async def unary_unary_wrapper(request, context):
+                await _validate_and_set(context)
                 return await handler.unary_unary(request, context)
-            return grpc.aio.unary_unary_rpc_method_handler(
-                new_behavior,
+
+            return grpc.unary_unary_rpc_method_handler(
+                unary_unary_wrapper,
                 request_deserializer=handler.request_deserializer,
-                response_serializer=handler.response_serializer
+                response_serializer=handler.response_serializer,
             )
-    
-    def _abort(self, message):
-        async def abort_behavior(request, context):
-            context.abort(grpc.StatusCode.UNAUTHENTICATED, message)
-        return grpc.aio.unary_unary_rpc_method_handler(abort_behavior)
+        if not handler.request_streaming and handler.response_streaming:
+            async def unary_stream_wrapper(request, context):
+                await _validate_and_set(context)
+                async for resp in handler.unary_stream(request, context):
+                    yield resp
+
+            return grpc.unary_stream_rpc_method_handler(
+                unary_stream_wrapper,
+                request_deserializer=handler.request_deserializer,
+                response_serializer=handler.response_serializer,
+            )
+        if handler.request_streaming and not handler.response_streaming:
+            async def stream_unary_wrapper(request_iterator, context):
+                await _validate_and_set(context)
+                return await handler.stream_unary(request_iterator, context)
+
+            return grpc.stream_unary_rpc_method_handler(
+                stream_unary_wrapper,
+                request_deserializer=handler.request_deserializer,
+                response_serializer=handler.response_serializer,
+            )
+        if handler.request_streaming and handler.response_streaming:
+            async def stream_stream_wrapper(request_iterator, context):
+                await _validate_and_set(context)
+                async for resp in handler.stream_stream(request_iterator, context):
+                    yield resp
+
+            return grpc.stream_stream_rpc_method_handler(
+                stream_stream_wrapper,
+                request_deserializer=handler.request_deserializer,
+                response_serializer=handler.response_serializer,
+            )
+        return handler

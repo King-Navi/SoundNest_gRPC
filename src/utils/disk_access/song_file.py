@@ -1,9 +1,9 @@
-import os
+import asyncio
 from pathlib import Path
 from tinytag import TinyTag
 from typing_extensions import override
+import aiofiles
 from .base_resource_manager import BaseResourceManager
-
 DEFAULT_CHUNK_SIZE = 64 * 1024  # 64 KB
 class SognFileManager(BaseResourceManager):
     @override
@@ -12,10 +12,10 @@ class SognFileManager(BaseResourceManager):
         filename = f"{resource_id_value}.{extension.lstrip('.')}"
         return self.base_dir / filename
 
-    def save_song(self, file_bytes, extension, file_name) -> Path:
+    async def save_song(self, file_bytes, extension, file_name) -> Path:
         self._validate_file_content(file_bytes, extension)
         self.base_dir.mkdir(parents=True, exist_ok=True)
-        self.write_resource((file_name, extension), file_bytes)
+        await self.write_resource((file_name, extension), file_bytes)
         return self._get_file_path((file_name, extension))
 
     def _validate_file_content(self,file_bytes: bytes, extension: str):
@@ -28,8 +28,9 @@ class SognFileManager(BaseResourceManager):
         else:
             raise ValueError("Unsupported file extension for content validation.")
 
-    def file_exists(self, resource_id: str, extension: str) -> bool:
-        return self._get_file_path((resource_id, extension)).exists()
+    async def file_exists(self, resource_id: str, extension: str) -> bool:
+        path = self._get_file_path((resource_id, extension))
+        return await asyncio.to_thread(path.exists)
 
     def get_audio_duration(self, resource_id: str, extension: str) -> float:
         file_path = self._get_file_path((resource_id, extension))
@@ -38,23 +39,23 @@ class SognFileManager(BaseResourceManager):
         tag = TinyTag.get(str(file_path))
         return tag.duration
     
-    def load_song_file(self, resource_id, extension="mp3")-> bytes:
-        return self.read_resource((resource_id, extension))
+    async def load_song_file(self, resource_id: str, extension: str = "mp3")-> bytes:
+        return await self.read_resource((resource_id, extension))
     
-    def read_resource_stream(self, resource_id: tuple, chunk_size: int = DEFAULT_CHUNK_SIZE):
-        """Generator that yields file content in chunks."""
+    async def read_resource_stream(self, resource_id: tuple, chunk_size: int = DEFAULT_CHUNK_SIZE):
+        """Async generator that yields file content in chunks."""
         resource_key = self._get_resource_key(resource_id)
-        lock = self._get_lock(resource_key)
+        lock = await self._get_lock(resource_key)
         mode = "rb"
 
-        with lock:
+        async with lock:
             try:
                 path = self._get_file_path(resource_id)
-                with open(path, mode) as f:
+                async with aiofiles.open(path, mode) as f:
                     while True:
-                        chunk = f.read(chunk_size)
+                        chunk = await f.read(chunk_size)
                         if not chunk:
                             break
                         yield chunk
-            except IOError as e:
+            except (IOError, OSError) as e:
                 raise e

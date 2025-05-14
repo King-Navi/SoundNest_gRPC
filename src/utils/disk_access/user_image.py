@@ -1,5 +1,5 @@
 import os
-from pathlib import Path
+import asyncio
 from dotenv import load_dotenv
 from typing_extensions import override
 
@@ -17,11 +17,12 @@ class UserImageManager(BaseResourceManager):
         filename = f"{resource_id_value}.{extension.lstrip('.')}"
         return self.base_dir / filename
 
-    def save_user_image(self, resource_id, image_bytes, extension="png"):
-        self.write_resource((resource_id, extension), image_bytes)
+    async def save_user_image(self, resource_id, image_bytes, extension="png"):
+        await self.write_resource((resource_id, extension), image_bytes)
 
-    def load_user_image(self, resource_id, extension="png")-> bytes:
-        return self.read_resource((resource_id, extension))
+    async def load_user_image(self, resource_id, extension="png")-> bytes:
+        return await self.read_resource((resource_id, extension))
     
-    def file_exists(self, resource_id: str, extension: str) -> bool:
-        return self._get_file_path((resource_id, extension)).exists()
+    async def file_exists(self, resource_id: str, extension: str) -> bool:
+        path = self._get_file_path((resource_id, extension))
+        return await asyncio.to_thread(path.exists)

@@ -1,0 +1,12 @@
+version: "3.8"
+
+services:
+  soundnest-grpc:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: soundnest-grpc-test
+    env_file:
+      - .env
+    ports:
+      - "50055:50051"

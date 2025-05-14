@@ -9,6 +9,7 @@ from streaming import song_pb2, song_pb2_grpc
 from services.song_service import SongService
 from utils.wrappers.song_wrapper import SongWithFile , Song
 
+from interceptors.jwt_interceptor import _JWT_PAYLOAD
 
 class SongController(song_pb2_grpc.SongServiceServicer):
     @inject
@@ -16,16 +17,15 @@ class SongController(song_pb2_grpc.SongServiceServicer):
         self.song_service = song_service
 
     async def UploadSong(self, request: song_pb2.Song, context: ServicerContext) -> song_pb2.UploadSongResponse: #pylint: disable=E1101:no-member
-        jwt_payload = getattr(context, 'jwt_payload', None)
+        jwt_payload = _JWT_PAYLOAD.get(None)
         if not jwt_payload:
-            context.abort(grpc.StatusCode.UNAUTHENTICATED, "Missing authentication token")
-
+            await context.abort(grpc.StatusCode.UNAUTHENTICATED, "Missing authentication token")
         user_id = jwt_payload.get('id')
         username = jwt_payload.get('username')
         role_id = jwt_payload.get('role')
         email = jwt_payload.get('email')
         try:
-            result = self.song_service.handle_upload(
+            result = await self.song_service.handle_upload(
                 user_id=user_id,
                 song_name=request.song_name,
                 file_bytes=request.file,
@@ -44,9 +44,9 @@ class SongController(song_pb2_grpc.SongServiceServicer):
             )
         
     async def UploadSongStream(self,  request_iterator: Iterator[song_pb2.UploadSongRequest], context: ServicerContext)-> song_pb2.UploadSongResponse: # pylint: disable=E1101
-        jwt_payload = getattr(context, 'jwt_payload', None)
+        jwt_payload = _JWT_PAYLOAD.get(None)
         if not jwt_payload:
-            context.abort(grpc.StatusCode.UNAUTHENTICATED, "Missing authentication token")
+            await context.abort(grpc.StatusCode.UNAUTHENTICATED, "Missing authentication token")
 
         user_id = jwt_payload.get('id')
         username = jwt_payload.get('username')
@@ -54,7 +54,7 @@ class SongController(song_pb2_grpc.SongServiceServicer):
         email = jwt_payload.get('email')
         logging.debug(f"Authenticated user: {username} ({user_id})")
         try:
-            result = self.song_service.handle_upload_stream(request_iterator, user_id)
+            result = await self.song_service.handle_upload_stream(request_iterator, user_id)
             return song_pb2.UploadSongResponse( # pylint: disable=E1101
                 result=True,
                 message="Song uploaded"
@@ -67,7 +67,7 @@ class SongController(song_pb2_grpc.SongServiceServicer):
 
     async def DownloadSongStream(self, request: song_pb2.DownloadSongRequest, context: ServicerContext)-> Iterator[song_pb2.DownloadSongResponse] : #pylint: disable=E1101:no-member
         try:
-            song_entity, chunk_generator = self.song_service.handle_download_stream(request.id_song)
+            song_entity, chunk_generator = await self.song_service.handle_download_stream(request.id_song)
             
             # send metadata
             yield song_pb2.DownloadSongResponse( # pylint: disable=E1101
@@ -80,20 +80,17 @@ class SongController(song_pb2_grpc.SongServiceServicer):
             )
 
             # send chunks
-            for chunk in chunk_generator:
+            async for chunk in chunk_generator:
                 yield song_pb2.DownloadSongResponse( # pylint: disable=E1101
                     chunk=song_pb2.DownloadSongChunk(chunk_data=chunk) # pylint: disable=E1101
                 )
 
         except Exception as e:
-            context.abort(grpc.StatusCode.NOT_FOUND, f"Song not found or failed: {str(e)}")
+            await context.abort(grpc.StatusCode.NOT_FOUND, f"Song not found or failed: {str(e)}")
 
     async def DownloadSong(self, request: song_pb2.DownloadSongRequest, context: ServicerContext) -> song_pb2.DownloadSongData: #pylint: disable=E1101:no-member
         try:
-            logging.debug(f"Tipo de request: {type(request)}")
-            logging.debug(f"Contenido recibido: {request}")
-            logging.debug(f"[DownloadSong] request.ListFields: {request.ListFields()}")
-            result : SongWithFile = self.song_service.handle_download(request.id_song)
+            result : SongWithFile = await self.song_service.handle_download(request.id_song)
 
             return song_pb2.DownloadSongData( # pylint: disable=E1101
                 song_name= result.song.fileName,
@@ -103,4 +100,4 @@ class SongController(song_pb2_grpc.SongServiceServicer):
                 extension="result.song.idSongExtension"
             )
         except Exception as e:
-            context.abort(grpc.StatusCode.NOT_FOUND, f"Song not found: {str(e)}")
+            await context.abort(grpc.StatusCode.NOT_FOUND, f"Song not found: {str(e)}")

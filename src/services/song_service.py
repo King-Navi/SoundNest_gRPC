@@ -1,6 +1,5 @@
 import uuid
 import datetime
-import logging
 from typing import Iterator
 from dependency_injector.wiring import inject
 from generated.streaming.song_pb2 import  UploadSongMetadata #pylint: disable=E0611
@@ -24,7 +23,7 @@ class SongService:
         self.song_manager :SognFileManager = song_manager
         self.song_repository :SongRepository = song_repository
         self.song_extension_repository : SongExtensionRepository = song_extension_repository
-    def handle_upload(
+    async def handle_upload(
             self,user_id: int ,
             song_name : str,
             file_bytes : bytearray,
@@ -33,12 +32,13 @@ class SongService:
             id_song_genre: int )-> bool:
         is_valid_extension(extension)
         resource_id : str = generate_unique_resource_id_song(self.song_repository)
-        self.song_manager.save_song(file_bytes=file_bytes, extension=extension, file_name=resource_id)
+        await self.song_manager.save_song(file_bytes=file_bytes, extension=extension, file_name=resource_id)
+        duration = self.song_manager.get_audio_duration(resource_id, extension)
 
         new_song = Song(
             songName=song_name,
             fileName=resource_id,
-            durationSeconds=round(self.song_manager.get_audio_duration(resource_id, extension)),
+            durationSeconds=round(duration),
             releaseDate=datetime.datetime.now(),
             isDeleted=False,
             idSongGenre=id_song_genre,
@@ -46,17 +46,17 @@ class SongService:
             idAppUser=user_id
         )
         self.song_repository.insert_song( new_song )
-        if not self.song_manager.file_exists(resource_id,extension):
+        if not await self.song_manager.file_exists(resource_id,extension):
             self.song_repository.delete_song_by_filename(resource_id)
             raise SongSavingError("Failed to save image to disk.")
         #TODO: Put in mongo the Metada descripcion
         return True
 
-    def handle_upload_stream(self, request_iterator, user_id)-> bool:
+    async def handle_upload_stream(self, request_iterator, user_id)-> bool:
         metadata : UploadSongMetadata = None
         total_bytes = 0
         chunks = []
-        for request in request_iterator:
+        async for request in request_iterator:
             if request.HasField('metadata'):
                 metadata = request.metadata
             elif request.HasField('chunk'):
@@ -67,11 +67,13 @@ class SongService:
         is_valid_extension_song(metadata.extension)
 
         resource_id : str = generate_unique_resource_id_song(self.song_repository)
-        self.song_manager.save_song(file_bytes=file_bytes, extension=metadata.extension, file_name=resource_id)
+        await self.song_manager.save_song(file_bytes=file_bytes, extension=metadata.extension, file_name=resource_id)
+        duration = self.song_manager.get_audio_duration(resource_id, metadata.extension)
+
         new_song = Song(
             songName=metadata.song_name,
             fileName=resource_id,
-            durationSeconds=round(self.song_manager.get_audio_duration(resource_id, metadata.extension)),
+            durationSeconds=round(duration),
             releaseDate=datetime.datetime.now(),
             isDeleted=False,
             idSongGenre=metadata.id_song_genre,
@@ -80,29 +82,28 @@ class SongService:
         )
         self.song_repository.insert_song( new_song )
 
-        if not self.song_manager.file_exists(resource_id, metadata.extension):
+        if not await self.song_manager.file_exists(resource_id, metadata.extension):
             self.song_repository.delete_song_by_filename(resource_id)
             raise SongSavingError("Failed to save image to disk.")
         #TODO: Put in mongo the Metada descripcion
         return True
 
-    def handle_download(self, song_id : int) -> Song:
+    async def handle_download(self, song_id : int) -> Song:
         #TODO: CADA VEZ SE TIENE QUE AUMENTAR LA VISAULIZACION SI NO ES AQUI ES EN RESTFUL
-        logging.debug(f"[song_service.py] song_id recibido: {song_id}")
         song: Song = self.song_repository.get_song_by_id(song_id)
         if song is None:
             raise ValueError("Song not found")
-        file_bytes: bytes = self.song_manager.load_song_file(song.fileName, self.song_extension_repository.get_extension_name_by_id(song.idSongExtension))
+        file_bytes: bytes = await self.song_manager.load_song_file(song.fileName, self.song_extension_repository.get_extension_name_by_id(song.idSongExtension))
         song_wrapper = SongWithFile(song=song, file_content=file_bytes)
         return song_wrapper
     
-    def handle_download_stream(self, song_id: int) -> tuple[Song, Iterator[bytes]]:
+    async def handle_download_stream(self, song_id: int) -> tuple[Song, Iterator[bytes]]:
         #TODO: CADA VEZ SE TIENE QUE AUMENTAR LA VISAULIZACION SI NO ES AQUI ES EN RESTFUL
-        logging.debug(f"[song_service.py] song_id recibido: {song_id}")
         song: Song = self.song_repository.get_song_by_id(song_id)
         if song is None:
             raise ValueError("Song not found")
-        chunk_generator = self.song_manager.read_resource_stream((song.fileName, self.song_extension_repository.get_extension_name_by_id(song.idSongExtension)))
+        extension = self.song_extension_repository.get_extension_name_by_id(song.idSongExtension)
+        chunk_generator = self.song_manager.read_resource_stream((song.fileName, extension))
         return song, chunk_generator
 
     def _generate_unique_resource_id(self) -> str:
