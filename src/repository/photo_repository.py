@@ -30,6 +30,7 @@ class PhotoRepository:
         try:
             return self.session.get(Photo, photo_id)
         except SQLAlchemyError as e:
+            self.session.rollback()
             raise e
 
     def get_photos_by_user_id(self, id_user: int) -> list[Photo]:
@@ -38,6 +39,7 @@ class PhotoRepository:
             result = self.session.scalars(stmt).all()
             return result
         except SQLAlchemyError as e:
+            self.session.rollback()
             raise e
 
     def has_image(self, id_user: int)->bool:
@@ -46,6 +48,7 @@ class PhotoRepository:
             result = self.session.execute(stmt).scalar()
             return result
         except SQLAlchemyError as e:
+            self.session.rollback()
             raise e
 
     def existe_filename(self, filename: str) ->bool:
@@ -54,6 +57,7 @@ class PhotoRepository:
             result = self.session.execute(stmt).scalar()
             return result
         except SQLAlchemyError as e:
+            self.session.rollback()
             raise e
 
     def delete_photo(self, photo_id: int) -> bool:

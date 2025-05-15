@@ -38,10 +38,10 @@ class SognFileManager(BaseResourceManager):
             raise FileNotFoundError(f"File {file_path} does not exist.")
         tag = TinyTag.get(str(file_path))
         return tag.duration
-    
+
     async def load_song_file(self, resource_id: str, extension: str = "mp3")-> bytes:
         return await self.read_resource((resource_id, extension))
-    
+
     async def read_resource_stream(self, resource_id: tuple, chunk_size: int = DEFAULT_CHUNK_SIZE):
         """Async generator that yields file content in chunks."""
         resource_key = self._get_resource_key(resource_id)
@@ -59,3 +59,13 @@ class SognFileManager(BaseResourceManager):
                         yield chunk
             except (IOError, OSError) as e:
                 raise e
+
+    async def delete_file(self, resource_id: str, extension: str) -> bool:
+        resource_key = self._get_resource_key((resource_id, extension))
+        lock = await self._get_lock(resource_key)
+        async with lock:
+            path = self._get_file_path((resource_id, extension))
+            if await asyncio.to_thread(path.exists):
+                await asyncio.to_thread(path.unlink)
+                return True
+            return False

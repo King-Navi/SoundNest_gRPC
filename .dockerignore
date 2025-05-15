@@ -10,8 +10,10 @@ __pycache__/
 *.pyo
 
 #test
-tests
+__test__/
 tests/
+pytest.ini
+
 # IDE
 *.log
 *.swp

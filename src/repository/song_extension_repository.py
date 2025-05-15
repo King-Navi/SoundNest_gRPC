@@ -16,6 +16,7 @@ class SongExtensionRepository:
                 return result.idSongExtension
             return -1
         except SQLAlchemyError as e:
+            self.session.rollback()
             raise e
     
     def get_extension_name_by_id(self, id_extension: int) -> Optional[str]:
@@ -30,4 +31,5 @@ class SongExtensionRepository:
                 return result.extensionName
             return None
         except SQLAlchemyError as e:
-            raise
+            self.session.rollback()
+            raise e

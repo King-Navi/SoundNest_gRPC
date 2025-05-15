@@ -14,6 +14,7 @@ class SongRepository:
             result = self.session.execute(stmt).scalar()
             return result
         except SQLAlchemyError as e:
+            self.session.rollback()
             raise e
 
     def insert_song(self, song: Song) -> bool:
@@ -41,6 +42,7 @@ class SongRepository:
         try:
             return self.session.get(Song, id_song)
         except SQLAlchemyError as e:
+            self.session.rollback()
             raise e
 
     def get_song_by_filename(self, filename: str) -> Song | None:
@@ -49,6 +51,7 @@ class SongRepository:
             result = self.session.execute(stmt).scalars().first()
             return result
         except SQLAlchemyError as e:
+            self.session.rollback()
             raise e
 
     def delete_song_by_filename(self, filename: str) -> bool:
