@@ -31,7 +31,10 @@ class SongRepository:
             song = self.session.get(Song, id_song)
             if not song:
                 return False
-            self.session.delete(song)
+            if song.isDeleted == 1:
+                return False
+
+            song.isDeleted = 1
             self.session.commit()
             return True
         except SQLAlchemyError as e:

@@ -16,6 +16,8 @@ from interceptors.jwt_interceptor import JWTInterceptor
 from utils.rest_api import app as rest_app
 from utils.injection.containers import Container
 from utils.check_connection import start_http_health_server
+from utils.rest_server import start_rest_server
+
 # pylint: enable=C0413
 warnings.simplefilter("error", RuntimeWarning)
 tracemalloc.start()
@@ -52,7 +54,7 @@ async def serve():
 
     #grpc port
     grpc_server.add_insecure_port(f'[::]:{PORT}')
-
+    await grpc_server.start()
     print(f'gRPC server running on port {PORT}...')
     try:
         await asyncio.gather(
@@ -64,14 +66,6 @@ async def serve():
     finally:
         print("Shutting down gRPC server…")
         await grpc_server.stop(0)
-
-async def start_rest_server(container: Container):
-    rest_app.container = container  # Opcional
-    SECOND_PORT_GRPC = 9999 # pylint: disable=C0103
-    print(f'REST API running on port {SECOND_PORT_GRPC}...')
-    config = uvicorn.Config(rest_app, host="0.0.0.0", port=SECOND_PORT_GRPC, log_level="info")
-    server = uvicorn.Server(config)
-    await server.serve()
 
 if __name__ == '__main__':
     try:

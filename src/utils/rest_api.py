@@ -1,16 +1,21 @@
 from fastapi import FastAPI, HTTPException, Depends
-from dependency_injector.wiring import inject, Provide
-from utils.injection.containers import Container
+from utils.injection.base_conteiner import BaseContainer
 from utils.disk_access.song_file import SognFileManager
 from repository.song_repository import SongRepository
 app = FastAPI()
 
+def get_file_manager() -> SognFileManager:
+    return BaseContainer.song_file_manager()
+
+def get_song_repository() -> SongRepository:
+    return BaseContainer.song_repository()
+
+
 @app.delete("/delete/song/{idsong}")
-@inject
 async def delete_song_file(
     idsong: int,
-    file_manager: SognFileManager = Depends(Provide[Container.song_file_manager]),
-    song_repo: SongRepository = Depends(Provide[Container.song_repository])
+    file_manager: SognFileManager = Depends(get_file_manager),
+    song_repo: SongRepository = Depends(get_song_repository)
 ):
     if idsong <= 0:
         raise HTTPException(status_code=400, detail="Invalid song ID")

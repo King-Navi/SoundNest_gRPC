@@ -1,7 +1,7 @@
 import asyncio
 import datetime
 import grpc 
-from src.generated.event import event_pb2, event_pb2_grpc
+from event import event_pb2, event_pb2_grpc
 from dependency_injector.wiring import Provider, inject
 from concurrent import futures
 

@@ -1,20 +1,29 @@
 import pytest
-from httpx import AsyncClient
-from src.utils.rest_api import app
+from httpx import AsyncClient , ASGITransport
+from unittest.mock import AsyncMock , MagicMock
 from models.mysql.models import Song, SongExtension
+from src.utils.rest_api import app
+from src.repository.song_repository import SongRepository
+from src.utils.disk_access.song_file import SognFileManager
+from src.utils.rest_api import get_song_repository, get_file_manager
 
 @pytest.mark.asyncio
-async def test_delete_song_success(override_dependencies):
-    mock_repo = override_dependencies.song_repository()
-    mock_file_manager = override_dependencies.song_file_manager()
+async def test_delete_song_success():
+    mock_repo = MagicMock(spec=SongRepository)
+    mock_file_manager = AsyncMock(spec=SognFileManager)
+    
     mock_song = Song()
     mock_song.fileName = "testfile"
     mock_song.SongExtension_ = SongExtension(extensionName="mp3")
     mock_repo.get_song_by_id.return_value = mock_song
     mock_repo.delete_song.return_value = True
     mock_file_manager.delete_file.return_value = True
-
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    
+    app.dependency_overrides[get_song_repository] = lambda: mock_repo
+    app.dependency_overrides[get_file_manager] = lambda: mock_file_manager
+    
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
         response = await client.delete("/delete/song/123")
 
     assert response.status_code == 200
