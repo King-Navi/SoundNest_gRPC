@@ -29,3 +29,13 @@ class NotificationModel(BaseModel):
     relevance: Optional[str] = 'low'
     createdAt: Optional[datetime] = Field(default_factory=datetime.utcnow)
     read: Optional[bool] = False
+
+
+class FcmTokenModel(BaseModel):
+    user_id: int
+    token: str
+    device: Optional[str] = Field(default="android", pattern="^(android|ios|web)$")
+    platform_version: Optional[str] = None
+    app_version: Optional[str] = None
+    createdAt: Optional[datetime] = Field(default_factory=datetime.utcnow)
+    updatedAt: Optional[datetime] = Field(default_factory=datetime.utcnow)

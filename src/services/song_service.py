@@ -11,7 +11,7 @@ from utils.disk_access.song_file import SognFileManager
 from utils.wrappers.song_wrapper import SongWithFile
 from .errors.exceptions import MissingArguments, SongSavingError
 
-VALID_EXTENSIONS = {"mp3", "wav"}
+VALID_EXTENSIONS = {"mp3"}
 class SongService:
     """business-logic layer for all SongService RPCs."""
     @inject

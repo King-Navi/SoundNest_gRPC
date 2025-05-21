@@ -7,6 +7,11 @@ enum EventType {
   CUSTOM = 1;
   NOTIFICATION = 2;
   DATA_UPDATE = 3;
+  HANDSHAKE_START =4;
+  HANDSHAKE_FINISH = 5;
+  COMMENT_REPLY_SEND = 6;
+  COMMENT_REPLY_RECIVE = 7;
+  SONG_VISITS_NOTIFICATION = 8;
 }
 
 message EventMessageRequest {

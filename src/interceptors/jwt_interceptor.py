@@ -13,7 +13,6 @@ JWT_SECRET = os.getenv("JWT_SECRET")
 PUBLIC_METHODS = [
     '/song.SongService/DownloadSong',
     '/song.SongService/DownloadSongStream',
-    '/event.EventService/Event', #TODO: REMOVE
 ]
 
 # ContextVar para propagar el payload

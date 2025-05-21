@@ -6,18 +6,17 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "generated"))
 import logging
 import threading
 import asyncio
-import uvicorn
 from grpc import aio
 from dotenv import load_dotenv
 from event import event_pb2_grpc
 from streaming import song_pb2_grpc
 from user_photo import user_image_pb2_grpc
 from interceptors.jwt_interceptor import JWTInterceptor
-from utils.rest_api import app as rest_app
 from utils.injection.containers import Container
 from utils.check_connection import start_http_health_server
-from utils.rest_server import start_rest_server
-
+from messaging.delete_song_consumer import start_consumer
+from messaging.alertEvent.comment_reply_consumer import start_consumer_comment_reply
+from messaging.alertEvent.song_visits_consumer import start_consumer_song_visits
 # pylint: enable=C0413
 warnings.simplefilter("error", RuntimeWarning)
 tracemalloc.start()
@@ -26,15 +25,14 @@ PORT = os.getenv("PYTHON_PORT")
 ENVIROMENT = os.getenv("ENVIROMENT", "production")
 async def serve():
     if ENVIROMENT == "development":
-        logging.basicConfig(level=logging.DEBUG)
-        logging.debug("Enter debug mode...")
+        logging.basicConfig(level=logging.INFO)
+        logging.info("Enter info mode...")
         threading.Thread(target=start_http_health_server, daemon=True).start()
 
     container = Container()
     container.wire(modules=[
         "controller.user_controller",
         "controller.song_controller",
-        "utils.rest_api"
         # otros módulos que tengan Provide[]
     ])
     grpc_server =  aio.server(
@@ -52,14 +50,15 @@ async def serve():
     song_pb2_grpc.add_SongServiceServicer_to_server(song_controller, grpc_server)
     user_image_pb2_grpc.add_UserImageServiceServicer_to_server( user_image_controller, grpc_server)
 
-    #grpc port
     grpc_server.add_insecure_port(f'[::]:{PORT}')
     await grpc_server.start()
     print(f'gRPC server running on port {PORT}...')
     try:
         await asyncio.gather(
             grpc_server.wait_for_termination(),
-            start_rest_server(container)
+            start_consumer(container.song_file_manager(), container.song_repository()),
+            start_consumer_song_visits(container.client_registry(), container.client_msg_android()),
+            start_consumer_comment_reply(container.client_registry(), container.client_msg_android()),
         )
     except asyncio.CancelledError:
         pass

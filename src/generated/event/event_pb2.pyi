@@ -27,6 +27,11 @@ class _EventTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._Enum
     CUSTOM: _EventType.ValueType  # 1
     NOTIFICATION: _EventType.ValueType  # 2
     DATA_UPDATE: _EventType.ValueType  # 3
+    HANDSHAKE_START: _EventType.ValueType  # 4
+    HANDSHAKE_FINISH: _EventType.ValueType  # 5
+    COMMENT_REPLY_SEND: _EventType.ValueType  # 6
+    COMMENT_REPLY_RECIVE: _EventType.ValueType  # 7
+    SONG_VISITS_NOTIFICATION: _EventType.ValueType  # 8
 
 class EventType(_EventType, metaclass=_EventTypeEnumTypeWrapper): ...
 
@@ -34,6 +39,11 @@ UNKNOWN: EventType.ValueType  # 0
 CUSTOM: EventType.ValueType  # 1
 NOTIFICATION: EventType.ValueType  # 2
 DATA_UPDATE: EventType.ValueType  # 3
+HANDSHAKE_START: EventType.ValueType  # 4
+HANDSHAKE_FINISH: EventType.ValueType  # 5
+COMMENT_REPLY_SEND: EventType.ValueType  # 6
+COMMENT_REPLY_RECIVE: EventType.ValueType  # 7
+SONG_VISITS_NOTIFICATION: EventType.ValueType  # 8
 global___EventType = EventType
 
 @typing.final
