@@ -13,7 +13,6 @@ from streaming import song_pb2_grpc
 from user_photo import user_image_pb2_grpc
 from interceptors.jwt_interceptor import JWTInterceptor
 from utils.injection.containers import Container
-from utils.check_connection import start_http_health_server
 from messaging.delete_song_consumer import start_consumer
 from messaging.alertEvent.comment_reply_consumer import start_consumer_comment_reply
 from messaging.alertEvent.song_visits_consumer import start_consumer_song_visits
@@ -27,14 +26,8 @@ async def serve():
     if ENVIROMENT == "development":
         logging.basicConfig(level=logging.INFO)
         logging.info("Enter info mode...")
-        threading.Thread(target=start_http_health_server, daemon=True).start()
-
     container = Container()
-    container.wire(modules=[
-        "controller.user_controller",
-        "controller.song_controller",
-        # otros módulos que tengan Provide[]
-    ])
+    container.wire()
     grpc_server =  aio.server(
         options=[
             ('grpc.max_send_message_length', 100 * 1024 * 1024),  # 100 MB

@@ -62,3 +62,6 @@ uploads/
 # Ignora la carpeta de claves
 secrets/
 .secrets/
+
+uploads/
+uploads

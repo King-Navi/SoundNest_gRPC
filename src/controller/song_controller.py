@@ -38,6 +38,7 @@ class SongController(song_pb2_grpc.SongServiceServicer):
                 message="Song uploaded"
             )
         except Exception as e:
+            logging.warning(e)
             return song_pb2.UploadSongResponse( # pylint: disable=E1101
                 result=False,
                 message=f"Failed to upload Song: {str(e)}"
@@ -60,6 +61,7 @@ class SongController(song_pb2_grpc.SongServiceServicer):
                 message="Song uploaded"
             )
         except Exception as e:
+            logging.warning(e)
             return song_pb2.UploadSongResponse( # pylint: disable=E1101
                 result=False,
                 message=f"Failed to upload Song: {str(e)}"
@@ -67,15 +69,17 @@ class SongController(song_pb2_grpc.SongServiceServicer):
 
     async def DownloadSongStream(self, request: song_pb2.DownloadSongRequest, context: ServicerContext)-> Iterator[song_pb2.DownloadSongResponse] : #pylint: disable=E1101:no-member
         try:
-            song_entity, chunk_generator = await self.song_service.handle_download_stream(request.id_song)
-            
+            song_entity, chunk_generator, description = await self.song_service.handle_download_stream(request.id_song)
+            extension = self.song_service.song_extension_repository.get_extension_name_by_id(song_entity.idSongExtension)
+            if not extension:
+                extension = "mp3"
             # send metadata
             yield song_pb2.DownloadSongResponse( # pylint: disable=E1101
                 metadata=song_pb2.DownloadSongMetadata( # pylint: disable=E1101
                     song_name=song_entity.fileName,
                     id_song_genre=song_entity.idSongGenre,
-                    description="song_entity.description", #TODO:
-                    extension="song_entity.extension" #TODO:
+                    description=description or "",
+                    extension=extension
                 )
             )
 
@@ -86,18 +90,19 @@ class SongController(song_pb2_grpc.SongServiceServicer):
                 )
 
         except Exception as e:
+            logging.warning(e)
             await context.abort(grpc.StatusCode.NOT_FOUND, f"Song not found or failed: {str(e)}")
 
     async def DownloadSong(self, request: song_pb2.DownloadSongRequest, context: ServicerContext) -> song_pb2.DownloadSongData: #pylint: disable=E1101:no-member
         try:
-            result : SongWithFile = await self.song_service.handle_download(request.id_song)
-
+            result, description, extension = await self.song_service.handle_download(request.id_song)
             return song_pb2.DownloadSongData( # pylint: disable=E1101
                 song_name= result.song.fileName,
                 file=result.file_content,
                 id_song_genre=result.song.idSongGenre,
-                description="#TODO: Ivan no ha hecho esto porque se canso", #TODO: Ivan no ha hecho esto porque se canso
-                extension="result.song.idSongExtension"
+                description=description or "",
+                extension=extension or "mp3"
             )
         except Exception as e:
+            logging.warning(e)
             await context.abort(grpc.StatusCode.NOT_FOUND, f"Song not found: {str(e)}")

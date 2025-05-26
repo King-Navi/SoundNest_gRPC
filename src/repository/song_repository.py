@@ -1,71 +1,83 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import select , exists
-from dependency_injector.wiring import inject
+from dependency_injector.wiring import inject, Provide
 from models.mysql.models import Song
+from typing import Callable
+import logging
+
 class SongRepository:
-    @inject
-    def __init__(self, session: Session):
-        self.session = session
+    def __init__(self,
+                  session_factory: Callable[[], Session]):
+        print(type(session_factory)) 
+        self.session_factory = session_factory
 
     def existe_filename(self, filename: str) ->bool:
         try:
-            stmt = select(exists().where(Song.fileName == filename))
-            result = self.session.execute(stmt).scalar()
-            return result
+            with self.session_factory() as session:
+                stmt = select(exists().where(Song.fileName == filename))
+                return session.execute(stmt).scalar()
         except SQLAlchemyError as e:
-            self.session.rollback()
+            logging.info(e)
             raise e
 
-    def insert_song(self, song: Song) -> bool:
+    def insert_song(self, song: Song) -> Song:
+        """
+        Inserts a new Song record into the database and returns
+        the fully populated instance (including any auto-generated fields).
+
+        :param song: A Song instance without its primary key set.
+        :returns: The same Song instance, now with all database-generated fields populated.
+        :raises SQLAlchemyError: If the operation fails and is rolled back.
+        """
         try:
-            self.session.add(song)
-            self.session.commit()
-            return True
+            with self.session_factory() as session:
+                session.add(song)
+                session.commit()
+                session.refresh(song)
+                return song
         except SQLAlchemyError as e:
-            self.session.rollback()
+            logging.info(e)
             raise e
 
     def delete_song(self, id_song: int) -> bool:
         try:
-            song = self.session.get(Song, id_song)
-            if not song:
-                return False
-            if song.isDeleted == 1:
-                return False
-
-            song.isDeleted = 1
-            self.session.commit()
-            return True
+            with self.session_factory() as session:
+                song = session.get(Song, id_song)
+                if not song or song.isDeleted == 1:
+                    return False
+                song.isDeleted = 1
+                session.commit()
+                return True
         except SQLAlchemyError as e:
-            self.session.rollback()
+            logging.info(e)
             raise e
 
     def get_song_by_id(self, id_song: int) -> Song | None:
         try:
-            return self.session.get(Song, id_song)
+            with self.session_factory() as session:
+                return session.get(Song, id_song)
         except SQLAlchemyError as e:
-            self.session.rollback()
+            logging.info(e)
             raise e
 
     def get_song_by_filename(self, filename: str) -> Song | None:
         try:
-            stmt = select(Song).where(Song.fileName == filename)
-            result = self.session.execute(stmt).scalars().first()
-            return result
+            with self.session_factory() as session:
+                stmt = select(Song).where(Song.fileName == filename)
+                return session.execute(stmt).scalars().first()
         except SQLAlchemyError as e:
-            self.session.rollback()
             raise e
 
     def delete_song_by_filename(self, filename: str) -> bool:
         try:
-            stmt = select(Song).where(Song.fileName == filename)
-            song = self.session.execute(stmt).scalars().first()
-            if not song:
-                return False
-            self.session.delete(song)
-            self.session.commit()
-            return True
+            with self.session_factory() as session:
+                stmt = select(Song).where(Song.fileName == filename)
+                song = session.execute(stmt).scalars().first()
+                if not song:
+                    return False
+                session.delete(song)
+                session.commit()
+                return True
         except SQLAlchemyError as e:
-            self.session.rollback()
             raise e

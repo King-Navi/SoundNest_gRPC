@@ -2,15 +2,15 @@ import os
 import json
 import logging
 from datetime import datetime
-import aio_pika
 import asyncio
+import aio_pika
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field, ValidationError
 from config.connection_rabbitmq import get_rabbitmq_url
 from controller.utils.client_registry import ClientRegistry
+from messaging.delete_song_consumer import wait_for_rabbitmq
 from utils.wrappers.event_wrapper import EventResponse
 from ..android_messaging import ClientAndroidNotifiacion
-
 
 load_dotenv()
 
@@ -29,7 +29,7 @@ async def start_consumer_comment_reply(
     client_registry: ClientRegistry,
     client_android_noti: ClientAndroidNotifiacion
 ):
-    connection = await aio_pika.connect_robust(RABBITMQ_URL)
+    connection = await wait_for_rabbitmq(RABBITMQ_URL)
     channel = await connection.channel()
     await channel.set_qos(prefetch_count=1)
     queue = await channel.declare_queue(COMMENT_REPLY_QUEUE, durable=True)

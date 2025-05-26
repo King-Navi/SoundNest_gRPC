@@ -9,4 +9,4 @@ services:
     env_file:
       - .env
     ports:
-      - "50055:50051"
+      - "50051:50051"

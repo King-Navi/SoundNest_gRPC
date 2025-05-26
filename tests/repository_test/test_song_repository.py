@@ -30,7 +30,7 @@ def create_song():
 def test_insert_and_get_song_by_id(db_session):
     repo = SongRepository(db_session)
     song = create_song()
-    assert repo.insert_song(song) is True
+    assert repo.insert_song(song) is not None
     assert song.idSong is not None
     fetched = repo.get_song_by_id(song.idSong)
     assert fetched is not None

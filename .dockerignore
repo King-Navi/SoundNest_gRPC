@@ -57,6 +57,7 @@ mypy.ini
 README.md
 
 uploads/
+uploads
 # Ignora la carpeta de claves
 secrets/
 .secrets/

@@ -2,35 +2,6 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 
-class AdditionalInfoModel(BaseModel):
-    userId: int
-    info: dict
-
-class ResponseModel(BaseModel):
-    user: str
-    message: str
-    timestamp: Optional[datetime] = Field(default_factory=datetime.utcnow)
-    parent_id: Optional[str]
-    responses: Optional[List[str]] = []
-
-class CommentModel(BaseModel):
-    song_id: int
-    user: str
-    message: str
-    timestamp: Optional[datetime] = Field(default_factory=datetime.utcnow)
-    parent_id: Optional[str]
-    responses: Optional[List[ResponseModel]] = []
-
-class NotificationModel(BaseModel):
-    sender: str
-    user_id: int
-    user: str
-    notification: str
-    relevance: Optional[str] = 'low'
-    createdAt: Optional[datetime] = Field(default_factory=datetime.utcnow)
-    read: Optional[bool] = False
-
-
 class FcmTokenModel(BaseModel):
     user_id: int
     token: str
@@ -39,3 +10,14 @@ class FcmTokenModel(BaseModel):
     app_version: Optional[str] = None
     createdAt: Optional[datetime] = Field(default_factory=datetime.utcnow)
     updatedAt: Optional[datetime] = Field(default_factory=datetime.utcnow)
+
+class SongDescriptionModel(BaseModel):
+    songs_id:   int       = Field(..., description="Unique song description ID")
+    author_id:  int       = Field(..., description="ID of the author")
+    description:str      = Field(..., description="Description text")
+    createdAt:  datetime  = Field(default_factory=datetime.utcnow,
+                                  description="Creation timestamp")
+    model_config = {
+        "validate_by_name": True,
+        "from_attributes":  True,
+    }

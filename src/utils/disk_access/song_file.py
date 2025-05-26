@@ -32,12 +32,11 @@ class SognFileManager(BaseResourceManager):
         path = self._get_file_path((resource_id, extension))
         return await asyncio.to_thread(path.exists)
 
-    def get_audio_duration(self, resource_id: str, extension: str) -> float:
+    async def get_audio_duration(self, resource_id: str, extension: str) -> float:
         file_path = self._get_file_path((resource_id, extension))
         if not file_path.exists():
             raise FileNotFoundError(f"File {file_path} does not exist.")
-        tag = TinyTag.get(str(file_path))
-        return tag.duration
+        return await asyncio.to_thread(lambda: TinyTag.get(str(file_path)).duration)
 
     async def load_song_file(self, resource_id: str, extension: str = "mp3")-> bytes:
         return await self.read_resource((resource_id, extension))

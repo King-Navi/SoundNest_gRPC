@@ -33,7 +33,7 @@ async def process_deletion(id_song: int, file_manager : SognFileManager, song_re
     if not success:
         raise RuntimeError("Failed to delete song from database")
 
-    print(f"[✓] Song {id_song} deleted successfully.")
+    print(f"Song {id_song} deleted successfully.")
 
 async def start_consumer(file_manager, song_repo):
     connection = await wait_for_rabbitmq(RABBITMQ_URL)
@@ -56,7 +56,7 @@ async def start_consumer(file_manager, song_repo):
                     print(f"[✗] Error processing message: {e}")
                     await message.reject(requeue=False)
 
-
+#TODO: it goes in other file
 async def wait_for_rabbitmq(url: str, retries: int = 60, delay: int = 1):
     for i in range(retries):
         try:
