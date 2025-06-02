@@ -1,10 +1,7 @@
-# tests/conftest.py
-
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 from dependency_injector.wiring import Provide
 from dependency_injector import providers
-from src.utils.rest_api import app
 from src.utils.injection.base_conteiner import BaseContainer
 from src.repository.song_repository import SongRepository
 from src.utils.disk_access.song_file import SognFileManager
@@ -20,10 +17,6 @@ def override_dependencies():
     container.song_repository.override(mock_song_repo)
     container.song_file_manager.override(mock_file_manager)
 
-    # Wirea módulo donde se usen Provide[] (esto actualiza FastAPI)
-    container.wire(modules=["src.utils.rest_api"])
-
-    app.container = container  # opcional pero útil si usas `.container` en tests
 
     return {
         "song_repository": mock_song_repo,

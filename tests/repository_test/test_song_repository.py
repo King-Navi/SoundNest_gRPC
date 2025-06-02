@@ -7,11 +7,11 @@ from src.config.connection_mysql import engine , SessionLocal
 
 
 @pytest.fixture
-def db_session():
+def db_session_factory():
     connection = engine.connect()
     transaction = connection.begin()
     session = SessionLocal(bind=connection)
-    yield session
+    yield lambda: session 
     session.close()
     transaction.rollback()
     connection.close()
@@ -24,11 +24,12 @@ def create_song():
         releaseDate=datetime.now(),
         idSongGenre=1,
         idSongExtension=1,
-        idAppUser=1
+        idAppUser=1,
+        isDeleted=0 
     )
 
-def test_insert_and_get_song_by_id(db_session):
-    repo = SongRepository(db_session)
+def test_insert_and_get_song_by_id(db_session_factory):
+    repo = SongRepository(db_session_factory)
     song = create_song()
     assert repo.insert_song(song) is not None
     assert song.idSong is not None
@@ -36,33 +37,34 @@ def test_insert_and_get_song_by_id(db_session):
     assert fetched is not None
     assert fetched.fileName == "archivo_unico_123"
 
-def test_existe_filename_true(db_session):
-    repo = SongRepository(db_session)
+def test_existe_filename_true(db_session_factory):
+    repo = SongRepository(db_session_factory)
     song = create_song()
     repo.insert_song(song)
     assert repo.existe_filename("archivo_unico_123") is True
 
-def test_existe_filename_false(db_session):
-    repo = SongRepository(db_session)
+def test_existe_filename_false(db_session_factory):
+    repo = SongRepository(db_session_factory)
     assert repo.existe_filename("no_existe") is False
 
-def test_get_song_by_filename(db_session):
-    repo = SongRepository(db_session)
+def test_get_song_by_filename(db_session_factory):
+    repo = SongRepository(db_session_factory)
     song = create_song()
     repo.insert_song(song)
     result = repo.get_song_by_filename("archivo_unico_123")
     assert result is not None
     assert result.songName == "Prueba"
 
-def test_delete_song_by_id(db_session):
-    repo = SongRepository(db_session)
+def test_delete_song_by_id(db_session_factory):
+    repo = SongRepository(db_session_factory)
     song = create_song()
     repo.insert_song(song)
     assert repo.delete_song(song.idSong) is True
-    assert repo.get_song_by_id(song.idSong) is None
+    assert repo.get_song_by_id(song.idSong) is not None
+    assert repo.get_song_by_id(song.idSong).isDeleted == 1
 
-def test_delete_song_by_filename(db_session):
-    repo = SongRepository(db_session)
+def test_delete_song_by_filename(db_session_factory):
+    repo = SongRepository(db_session_factory)
     song = create_song()
     repo.insert_song(song)
     assert repo.delete_song_by_filename("archivo_unico_123") is True

@@ -1,0 +1,17 @@
+[run]
+source = src
+
+[paths]
+src =
+    src
+    C:\Users\USER\Desktop\uv\6to Semestre\Sistemas en red\Proyecto\SoundNestgRPC\src
+
+[report]
+omit =
+    */tests/*
+    */__init__.py
+    */.venv/*
+    */site-packages/*
+
+[xml]
+output = coverage.xml

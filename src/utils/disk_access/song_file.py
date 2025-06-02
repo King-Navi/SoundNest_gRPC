@@ -1,5 +1,6 @@
 import asyncio
 from pathlib import Path
+import logging
 from tinytag import TinyTag
 from typing_extensions import override
 import aiofiles
@@ -57,6 +58,7 @@ class SognFileManager(BaseResourceManager):
                             break
                         yield chunk
             except (IOError, OSError) as e:
+                logging.error(f"Failed to read file for {resource_id}: {e}")
                 raise e
 
     async def delete_file(self, resource_id: str, extension: str) -> bool:
