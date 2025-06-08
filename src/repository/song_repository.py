@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session , joinedload
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import select , exists
 from dependency_injector.wiring import inject, Provide
@@ -9,7 +9,6 @@ import logging
 class SongRepository:
     def __init__(self,
                   session_factory: Callable[[], Session]):
-        print(type(session_factory)) 
         self.session_factory = session_factory
 
     def existe_filename(self, filename: str) ->bool:
@@ -45,18 +44,22 @@ class SongRepository:
             with self.session_factory() as session:
                 song = session.get(Song, id_song)
                 if not song or song.isDeleted == 1:
-                    return False
+                    return True
                 song.isDeleted = 1
                 session.commit()
                 return True
         except SQLAlchemyError as e:
-            logging.info(e)
             raise e
 
     def get_song_by_id(self, id_song: int) -> Song | None:
         try:
             with self.session_factory() as session:
-                return session.get(Song, id_song)
+                stmt = (
+                    session.query(Song)
+                           .options(joinedload(Song.SongExtension_))
+                           .filter(Song.idSong == id_song)
+                )
+                return stmt.one_or_none()
         except SQLAlchemyError as e:
             logging.info(e)
             raise e

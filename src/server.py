@@ -4,7 +4,6 @@ import warnings
 import tracemalloc
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "generated"))
 import logging
-import threading
 import asyncio
 from grpc import aio
 from dotenv import load_dotenv

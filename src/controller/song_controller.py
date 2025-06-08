@@ -38,7 +38,8 @@ class SongController(song_pb2_grpc.SongServiceServicer):
                 message="Song uploaded"
             )
         except Exception as e:
-            logging.warning(e)
+            logging.warning(f'[song_controller] error al subir la song en Unary-Unary')
+            logging.info(e)
             return song_pb2.UploadSongResponse( # pylint: disable=E1101
                 result=False,
                 message=f"Failed to upload Song: {str(e)}"
@@ -53,7 +54,6 @@ class SongController(song_pb2_grpc.SongServiceServicer):
         username = jwt_payload.get('username')
         role_id = jwt_payload.get('role')
         email = jwt_payload.get('email')
-        logging.debug(f"Authenticated user: {username} ({user_id})")
         try:
             result = await self.song_service.handle_upload_stream(request_iterator, user_id)
             return song_pb2.UploadSongResponse( # pylint: disable=E1101
@@ -61,7 +61,8 @@ class SongController(song_pb2_grpc.SongServiceServicer):
                 message="Song uploaded"
             )
         except Exception as e:
-            logging.warning(e)
+            logging.warning(f'[song_controller] error al subir la song en Stream-Unary')
+            logging.info(e)
             return song_pb2.UploadSongResponse( # pylint: disable=E1101
                 result=False,
                 message=f"Failed to upload Song: {str(e)}"
@@ -90,7 +91,8 @@ class SongController(song_pb2_grpc.SongServiceServicer):
                 )
 
         except Exception as e:
-            logging.warning(e)
+            logging.warning(f'[song_controller] error al descargar la song en Unary-Stream')
+            logging.info(e)
             await context.abort(grpc.StatusCode.NOT_FOUND, f"Song not found or failed: {str(e)}")
 
     async def DownloadSong(self, request: song_pb2.DownloadSongRequest, context: ServicerContext) -> song_pb2.DownloadSongData: #pylint: disable=E1101:no-member
@@ -104,5 +106,6 @@ class SongController(song_pb2_grpc.SongServiceServicer):
                 extension=extension or "mp3"
             )
         except Exception as e:
-            logging.warning(e)
+            logging.warning(f'[song_controller] error al descargar la song en Unary-Unary')
+            logging.info(e)
             await context.abort(grpc.StatusCode.NOT_FOUND, f"Song not found: {str(e)}")

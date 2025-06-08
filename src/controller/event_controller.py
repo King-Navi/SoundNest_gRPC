@@ -41,7 +41,6 @@ class EventController(event_pb2_grpc.EventServiceServicer):
             try:
                 async for req in request_iterator:
                     logging.info(f"[Cliente id: {user_id}  Nombre: {username}] Tipo:{req.event_type} Envió: {req.custom_event_type} - {req.payload}")
-                    # TODO: Falta Service para visualizaciones
                     incoming = IncomingEvent(
                         event_type=req.event_type,
                         custom_event_type=req.custom_event_type,
