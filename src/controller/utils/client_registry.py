@@ -1,7 +1,5 @@
 import asyncio
 import logging
-import asyncio
-
 from dataclasses import dataclass
 from grpc.aio import ServicerContext
 from event.event_pb2 import EventMessageReturn #pylint: disable=E0611
@@ -14,23 +12,34 @@ class ActiveClient:
     queue: asyncio.Queue
     context: ServicerContext
 
+    def __hash__(self):
+        return hash(id(self))
+
+    def __eq__(self, other):
+        return self is other
 
 class ClientRegistry:
     def __init__(self):
-        self._clients: dict[str, ActiveClient] = {}
+        self._clients: dict[str, set[ActiveClient]] = {}
         self._lock = asyncio.Lock()
 
     async def register(self, client: ActiveClient):
-        logging.info(f"Se registro: {client.user_name}" )
         async with self._lock:
-            self._clients[client.user_id] = client
+            if client.user_id not in self._clients:
+                self._clients[client.user_id] = set()
+            self._clients[client.user_id].add(client)
+            logging.info(f"Registrado cliente {client.user_name} con ID {client.user_id}. Total conexiones: {len(self._clients[client.user_id])}")
 
-    async def unregister(self, user_id: str):
-        logging.info(f"Se elimino del directorio el id: {user_id}" )
+    async def unregister(self, user_id: str, client_to_remove: ActiveClient):
         async with self._lock:
-            self._clients.pop(user_id, None)
+            clients = self._clients.get(user_id)
+            if clients:
+                clients.discard(client_to_remove)
+                logging.info(f"Cliente {client_to_remove.user_name} eliminado de ID {user_id}. Quedan: {len(clients)} conexiones")
+                if not clients:
+                    del self._clients[user_id]
 
-    async def get(self, user_id: str) -> ActiveClient | None:
+    async def get(self, user_id: str) -> set[ActiveClient] | None:
         async with self._lock:
             return self._clients.get(user_id)
 
@@ -56,32 +65,35 @@ class ClientRegistry:
                 - True if the message was successfully enqueued for delivery.
                 - False if the client was missing or its context is no longer active.
         """
-        logging.info(
-            f"[ClientRegistry] Sending event '{event.event_type_response}' to user {user_id}"
-        )
-        ts_value = (
-            event.timestamp
-            if isinstance(event.timestamp, str)
-            else event.timestamp.isoformat()
-        )
         proto_msg = EventMessageReturn(
-            event_type_respose = event.event_type_response,
-            custom_event_type = event.custom_event_type or "",
-            is_succes_event = event.is_success,
-            message = event.message,
-            timestamp = ts_value,
-            status = event.status or ""
+                event_type_respose=event.event_type_response,
+                custom_event_type=event.custom_event_type or "",
+                is_succes_event=event.is_success,
+                message=event.message,
+                timestamp=event.timestamp if isinstance(event.timestamp, str) else event.timestamp.isoformat(),
+                status=event.status or ""
         )
+
         async with self._lock:
-            client = self._clients.get(user_id)
-            if not client or client.context.done():
-                logging.warning(f"Could not send to {user_id}: client missing or context done")
-                self._clients.pop(user_id, None)
+            clients = self._clients.get(user_id, set()).copy()
+            if not clients:
+                logging.warning(f"No se encontraron clientes activos para el usuario {user_id}")
                 return False
+            
+            inactive = {c for c in clients if c.context.done()}
+            active = clients - inactive
+            if inactive:
+                self._clients[user_id] -= inactive
+                if not self._clients[user_id]:
+                    del self._clients[user_id]
+        sent = False
+        for client in active:
             await client.queue.put(proto_msg)
-            return True
+            sent = True
+        if sent:
+            logging.info(f"[ClientRegistry] Sent '{event.event_type_response}' to user {user_id} ({len(active)} clientes)")
+        return sent
 
     async def list_clients(self) -> list[str]:
         async with self._lock:
-            logging.info(f"[ClientRegistry] Clientes conectados: {list(self._clients.keys())}")
-            return list(self._clients.keys())
+            return [f"{uid} ({len(clients)} conexiones)" for uid, clients in self._clients.items()]

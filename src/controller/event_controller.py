@@ -10,7 +10,7 @@ from utils.wrappers.event_wrapper import IncomingEvent, RouterResponse , EventRe
 from .utils.client_registry import ClientRegistry , ActiveClient
 from messaging.android_messaging import ClientAndroidNotifiacion
 
-
+PING_TYPE = 3
 class EventController(event_pb2_grpc.EventServiceServicer):
     @inject
     def __init__(self,
@@ -40,6 +40,9 @@ class EventController(event_pb2_grpc.EventServiceServicer):
         async def read_from_client():
             try:
                 async for req in request_iterator:
+                    if req.event_type == PING_TYPE:
+                        logging.info(f"Ignorado evento tipo 3 (PONG) de {user_id}")
+                        continue
                     logging.info(f"[Cliente id: {user_id}  Nombre: {username}] Tipo:{req.event_type} Envió: {req.custom_event_type} - {req.payload}")
                     incoming = IncomingEvent(
                         event_type=req.event_type,
@@ -49,7 +52,7 @@ class EventController(event_pb2_grpc.EventServiceServicer):
                     result : RouterResponse = await self.event_service.process_event(user_id,username,incoming)
                     if result is None:
                         continue
-                    await self.client_msg_android.send_notification(send_to_id_user=result.send_to_id_user, tittle="Prueba", message="Prueba") #TODO: Ver que enviar
+                    await self.client_msg_android.send_notification(send_to_id_user=result.send_to_id_user, title="Te ha llegado un mensaje", message=result.response)
                     await self.client_registry.send_to_client(result.send_to_id_user , result.response)
 
             except grpc.aio.AioRpcError as e:
@@ -62,10 +65,9 @@ class EventController(event_pb2_grpc.EventServiceServicer):
         async def ping_to_client():
             try:
                 while not cancel_event.is_set():
-                    await self.client_registry.list_clients()
                     await asyncio.sleep(30)
                     msg = EventResponse(
-                        event_type_response=3,
+                        event_type_response=PING_TYPE,
                         custom_event_type="PING",
                         is_success=True,
                         message="PING",
@@ -87,12 +89,24 @@ class EventController(event_pb2_grpc.EventServiceServicer):
 
         try:
             while not cancel_event.is_set():
-                msg = await queue.get()
+                get_msg_task    = asyncio.create_task(queue.get())
+                cancel_evt_task = asyncio.create_task(cancel_event.wait())
+
+                done, pending = await asyncio.wait(
+                    [get_msg_task, cancel_evt_task],
+                    return_when=asyncio.FIRST_COMPLETED,
+                )
+                for task in pending:
+                    task.cancel()
+                if cancel_evt_task in done:
+                    break
+                msg = get_msg_task.result()
                 yield msg
         except Exception as e:
             logging.info(f"[ERROR] Fallo en stream principal: {e}")
         finally:
             reader_task.cancel()
             writer_task.cancel()
-            await self.client_registry.unregister(user_id)
+            await asyncio.gather(reader_task, writer_task, return_exceptions=True)
+            await self.client_registry.unregister(user_id, client)
             logging.info(f"[INFO] Cliente {user_id} desconectado y removido.")
